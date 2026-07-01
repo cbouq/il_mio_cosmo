@@ -72,6 +72,7 @@ export class UI {
     const list = this.$('nav-list');
     list.innerHTML = '';
     this._navGroups = [];
+    this._mobileButtons = [];
 
     universe.costellazioni.forEach((cost) => {
       const group = document.createElement('div');
@@ -107,10 +108,67 @@ export class UI {
       list.appendChild(group);
       this._navGroups.push(group);
     });
+
+    this._buildMobileNav(universe);
   }
 
   _openOnly(group) {
     this._navGroups.forEach((g) => g.classList.toggle('open', g === group));
+  }
+
+  _buildMobileNav(universe) {
+    const nav = this.$('mobile-nav');
+    const toggle = this.$('mobile-nav-toggle');
+    const menu = this.$('mobile-nav-menu');
+    if (!nav || !toggle || !menu) return;
+
+    menu.innerHTML = '';
+    const close = () => {
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    const open = () => {
+      nav.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    };
+    const setOpen = (value) => (value ? open() : close());
+
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(!nav.classList.contains('open'));
+    });
+    document.addEventListener('click', (e) => {
+      if (!nav.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+
+    universe.costellazioni.forEach((cost) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'mobile-const';
+      item.setAttribute('role', 'menuitem');
+      item.innerHTML = `
+        <span class="mobile-const-dot" style="background:${cost.colore};color:${cost.colore}"></span>
+        <span class="mobile-const-name">${cost.nome}</span>
+        <span class="mobile-const-count">${cost.stelle.length}</span>`;
+      item.addEventListener('click', () => {
+        this._markMobileNav(cost);
+        toggle.textContent = cost.nome;
+        close();
+        this.app.travelToConstellation(cost);
+      });
+      menu.appendChild(item);
+      this._mobileButtons.push({ item, cost });
+    });
+  }
+
+  _markMobileNav(cost) {
+    if (!this._mobileButtons) return;
+    this._mobileButtons.forEach(({ item, cost: itemCost }) => {
+      item.classList.toggle('active', itemCost === cost);
+    });
   }
 
   // --- Pannello informazioni -------------------------------------------------
