@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070810"/><stop offset="100%" stop-color="#15101f"/>
+    </linearGradient>
+    <linearGradient id="ac" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#74e0ff"/><stop offset="100%" stop-color="#b48cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="800" fill="url(#bg)"/>
+  <g opacity=".5" fill="#ffffff">
+    <circle cx="120" cy="110" r="1.6"/><circle cx="1080" cy="90" r="1.4"/><circle cx="980" cy="680" r="1.6"/><circle cx="200" cy="640" r="1.4"/>
+  </g>
+  <text x="90" y="300" font-family="Orbitron, sans-serif" font-size="84" font-weight="700" fill="#eaf3ff" letter-spacing="2">HUMAN</text>
+  <text x="90" y="392" font-family="Orbitron, sans-serif" font-size="84" font-weight="700" fill="#eaf3ff" letter-spacing="2">BEFORE</text>
+  <text x="90" y="484" font-family="Orbitron, sans-serif" font-size="84" font-weight="700" fill="url(#ac)" letter-spacing="2">PROMPT</text>
+  <!-- prompt bar -->
+  <rect x="92" y="540" width="980" height="70" rx="12" fill="rgba(255,255,255,0.05)" stroke="rgba(120,200,255,0.4)" stroke-width="1.5"/>
+  <text x="118" y="585" font-family="Inter, sans-serif" font-size="24" fill="#8ea4c2">scrivi un prompt…</text>
+  <rect x="300" y="562" width="3" height="30" fill="#74e0ff"/>
+  <text x="92" y="690" font-family="Inter, sans-serif" font-size="26" fill="#cfe6f5" font-style="italic">Il rischio non è usare l'intelligenza artificiale.</text>
+  <text x="92" y="726" font-family="Inter, sans-serif" font-size="26" fill="#ffb454" font-style="italic">Il rischio è smettere di pensare.</text>
+</svg>

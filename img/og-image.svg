@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="og" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06102a"/><stop offset="60%" stop-color="#0b1b48"/><stop offset="100%" stop-color="#221048"/>
+    </linearGradient>
+    <linearGradient id="ogp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#74e0ff"/><stop offset="100%" stop-color="#b48cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#og)"/>
+  <g fill="#fff" opacity=".7">
+    <circle cx="120" cy="120" r="2"/><circle cx="980" cy="90" r="1.6"/><circle cx="1080" cy="420" r="2"/><circle cx="200" cy="520" r="1.6"/>
+  </g>
+  <circle cx="980" cy="320" r="150" fill="url(#ogp)"/>
+  <ellipse cx="980" cy="320" rx="250" ry="62" fill="none" stroke="#ffb454" stroke-width="6" opacity=".7" transform="rotate(-18 980 320)"/>
+  <text x="90" y="300" font-family="Orbitron, sans-serif" font-size="74" font-weight="700" fill="#eaf3ff">Dmitry Laurenzi</text>
+  <text x="92" y="370" font-family="Inter, sans-serif" font-size="34" fill="#74e0ff" letter-spacing="6">MEDIA DESIGNER</text>
+</svg>

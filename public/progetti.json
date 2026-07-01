@@ -1,0 +1,216 @@
+{
+  "_istruzioni": "Questo file definisce la galassia dell'esperienza. COSTELLAZIONI = categorie/aree del Media Design. STELLE (progetti) = la voce 'progetti' dentro ogni costellazione. PIANETI = i dettagli di ogni progetto. Le aree riprendono il corso di Media Design dello IED (web, app, game, interaction/UX, installazioni, motion, AR/VR, creative coding). Modifica testi, colori e valori e aggiorna il browser. Colori in esadecimale (#rrggbb). 'dimensione' e 'distanza' sono relativi (0.4-2). 'stato': completato, in corso, in pausa, idea. 'link' apre la scheda del progetto nel portfolio.",
+  "titoloGalassia": "Il mio universo",
+  "costellazioni": [
+    {
+      "id": "web", "nome": "Web Design", "colore": "#4fa3ff",
+      "descrizione": "Siti ed esperienze che vivono nel browser.",
+      "progetti": [
+        {
+          "id": "portfolio-cosmico", "nome": "Portfolio Cosmico", "stato": "in corso", "anno": 2026,
+          "coloreStella": "#9ad0ff", "dimensione": 1.2,
+          "descrizione": "Questo stesso portfolio: una galassia esplorabile in WebGL.",
+          "tecnologie": ["Three.js", "JavaScript", "Vite"], "link": "",
+          "pianeti": [
+            { "nome": "Galassia 3D", "tipo": "gassoso", "colore": "#6aa0ff", "dimensione": 1.3, "distanza": 1.2, "anelli": true, "descrizione": "Stelle, soli e buco nero in tempo reale." },
+            { "nome": "Interfaccia", "tipo": "roccioso", "colore": "#c08457", "dimensione": 0.7, "distanza": 2.0, "descrizione": "HUD, navigazione e pannelli." }
+          ]
+        },
+        {
+          "id": "landing-evento", "nome": "Landing Evento", "stato": "completato", "anno": 2025,
+          "coloreStella": "#7fb8ff", "dimensione": 0.9,
+          "descrizione": "Pagina animata per il lancio di un evento.",
+          "tecnologie": ["HTML", "CSS", "GSAP"], "link": "",
+          "pianeti": [
+            { "nome": "Hero animata", "tipo": "oceano", "colore": "#3da9c9", "dimensione": 0.9, "distanza": 1.3, "descrizione": "Animazioni d'ingresso." },
+            { "nome": "Iscrizioni", "tipo": "ghiacciato", "colore": "#bfe8ff", "dimensione": 0.6, "distanza": 2.2, "descrizione": "Form e conferme." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "app", "nome": "App & Mobile", "colore": "#ff9f43",
+      "descrizione": "Applicazioni per smartphone e tablet.",
+      "progetti": [
+        {
+          "id": "fitness", "nome": "App Fitness", "stato": "idea", "anno": 2026,
+          "coloreStella": "#ffce8a", "dimensione": 1.0,
+          "descrizione": "Tracker di allenamenti con statistiche e obiettivi.",
+          "tecnologie": ["Figma", "Prototipo"], "link": "",
+          "pianeti": [
+            { "nome": "Allenamenti", "tipo": "roccioso", "colore": "#c78a4f", "dimensione": 0.8, "distanza": 1.1, "lune": 1, "descrizione": "Schede ed esercizi." },
+            { "nome": "Statistiche", "tipo": "ghiacciato", "colore": "#cfeaff", "dimensione": 0.7, "distanza": 2.0, "descrizione": "Grafici e progressi." }
+          ]
+        },
+        {
+          "id": "companion", "nome": "Companion App", "stato": "idea", "anno": 2026,
+          "coloreStella": "#ffba6b", "dimensione": 0.8,
+          "descrizione": "App di supporto a un'esperienza fisica o a un gioco.",
+          "tecnologie": ["UX", "Figma"], "link": "",
+          "pianeti": [
+            { "nome": "Mappa", "tipo": "oceano", "colore": "#3aa0c9", "dimensione": 0.8, "distanza": 1.2, "descrizione": "Orientamento e contenuti." },
+            { "nome": "Notifiche", "tipo": "lava", "colore": "#ff7e4d", "dimensione": 0.6, "distanza": 2.1, "descrizione": "Promemoria contestuali." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "games", "nome": "Game Design", "colore": "#c46bff",
+      "descrizione": "Videogiochi, prototipi e meccaniche interattive.",
+      "progetti": [
+        {
+          "id": "maskuest", "nome": "Maskuest", "stato": "in corso", "anno": 2025,
+          "coloreStella": "#ff9bf0", "dimensione": 1.4,
+          "descrizione": "Platformer narrativo: un'IA prende coscienza in un mondo-prigione.",
+          "tecnologie": ["GameMaker", "GML"], "link": "lavoro-3.html",
+          "pianeti": [
+            { "nome": "Personaggio", "tipo": "roccioso", "colore": "#c77f4f", "dimensione": 0.8, "distanza": 1.0, "lune": 1, "descrizione": "Movimento, salto e dash." },
+            { "nome": "I 4 mondi", "tipo": "lava", "colore": "#ff5a4d", "dimensione": 1.1, "distanza": 1.9, "lune": 2, "descrizione": "Limbo, Inferno, Ghiaccio, Giungla." },
+            { "nome": "Maschere", "tipo": "gassoso", "colore": "#b58bff", "dimensione": 1.2, "distanza": 2.8, "anelli": true, "descrizione": "I poteri del protagonista." }
+          ]
+        },
+        {
+          "id": "roguelike", "nome": "Roguelike Spaziale", "stato": "idea", "anno": 2026,
+          "coloreStella": "#e0a0ff", "dimensione": 1.0,
+          "descrizione": "Esplorazione procedurale con combattimenti a turni.",
+          "tecnologie": ["Godot", "GDScript"], "link": "",
+          "pianeti": [
+            { "nome": "Generazione", "tipo": "gassoso", "colore": "#a06bff", "dimensione": 1.3, "distanza": 1.3, "anelli": true, "descrizione": "Mappe procedurali." },
+            { "nome": "Combattimento", "tipo": "lava", "colore": "#ff6a3d", "dimensione": 0.9, "distanza": 2.3, "descrizione": "Sistema a turni." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ux", "nome": "Interaction & UI/UX", "colore": "#37e0b0",
+      "descrizione": "Interfacce, kiosk e prototipi navigabili.",
+      "progetti": [
+        {
+          "id": "atlas-nike", "nome": "ATLAS — Nike Kiosk", "stato": "completato", "anno": 2025,
+          "coloreStella": "#7af0c8", "dimensione": 1.3,
+          "descrizione": "Kiosk interattivo in-store per Nike: concierge AI + Olympic Arena.",
+          "tecnologie": ["Figma", "UI/UX", "Kiosk"], "link": "lavoro-2.html",
+          "pianeti": [
+            { "nome": "AI Core", "tipo": "gassoso", "colore": "#5fe0b0", "dimensione": 1.3, "distanza": 1.2, "anelli": true, "descrizione": "Il concierge conversazionale." },
+            { "nome": "Olympic Arena", "tipo": "lava", "colore": "#ff7043", "dimensione": 1.0, "distanza": 2.1, "lune": 1, "descrizione": "La parte gamificata." },
+            { "nome": "Design system", "tipo": "ghiacciato", "colore": "#d6f0ff", "dimensione": 0.7, "distanza": 2.9, "descrizione": "Palette Volt e UI." }
+          ]
+        },
+        {
+          "id": "dashboard", "nome": "Dashboard Interattiva", "stato": "idea", "anno": 2026,
+          "coloreStella": "#6ad0c0", "dimensione": 0.9,
+          "descrizione": "Pannello dati chiaro e navigabile.",
+          "tecnologie": ["UX", "Data design"], "link": "",
+          "pianeti": [
+            { "nome": "Widget", "tipo": "roccioso", "colore": "#b5824e", "dimensione": 0.8, "distanza": 1.2, "descrizione": "Componenti modulari." },
+            { "nome": "Flussi", "tipo": "oceano", "colore": "#3da9c9", "dimensione": 0.9, "distanza": 2.0, "descrizione": "Percorsi utente." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "installazioni", "nome": "Installazioni Interattive", "colore": "#ff5a8a",
+      "descrizione": "Esperienze fisiche e digitali per spazi ed eventi.",
+      "progetti": [
+        {
+          "id": "human-before-prompt", "nome": "Human Before Prompt", "stato": "completato", "anno": 2025,
+          "coloreStella": "#ff8fb6", "dimensione": 1.3,
+          "descrizione": "Installazione in quattro aree sull'uso dell'AI nelle arti.",
+          "tecnologie": ["Installazione", "AI & arte", "Interattiva"], "link": "lavoro-1.html",
+          "pianeti": [
+            { "nome": "Prompt Room", "tipo": "roccioso", "colore": "#c97fa0", "dimensione": 0.8, "distanza": 1.1, "descrizione": "Scrivi e l'AI genera." },
+            { "nome": "Missing Thought", "tipo": "oceano", "colore": "#6fb8d0", "dimensione": 0.9, "distanza": 1.9, "lune": 1, "descrizione": "Le domande critiche." },
+            { "nome": "Responsibility Wall", "tipo": "gassoso", "colore": "#ff9ec8", "dimensione": 1.2, "distanza": 2.8, "anelli": true, "descrizione": "Le frasi del pubblico." }
+          ]
+        },
+        {
+          "id": "muro-generativo", "nome": "Muro Generativo", "stato": "idea", "anno": 2026,
+          "coloreStella": "#ff7aa6", "dimensione": 0.9,
+          "descrizione": "Una parete che reagisce alla presenza delle persone.",
+          "tecnologie": ["Creative coding", "Sensori"], "link": "",
+          "pianeti": [
+            { "nome": "Visual", "tipo": "lava", "colore": "#ff5a8a", "dimensione": 0.9, "distanza": 1.3, "descrizione": "Grafica generativa." },
+            { "nome": "Tracking", "tipo": "ghiacciato", "colore": "#e6d8ff", "dimensione": 0.6, "distanza": 2.1, "descrizione": "Rilevamento dei movimenti." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "motion", "nome": "Motion & Video", "colore": "#ffd24a",
+      "descrizione": "Animazione, title sequence e contenuti dinamici.",
+      "progetti": [
+        {
+          "id": "pulsar", "nome": "Pulsar — Title Sequence", "stato": "completato", "anno": 2025,
+          "coloreStella": "#ffe08a", "dimensione": 1.0,
+          "descrizione": "Sequenza animata sulla nascita di una stella.",
+          "tecnologie": ["After Effects", "Sound design"], "link": "",
+          "pianeti": [
+            { "nome": "Animazione", "tipo": "gassoso", "colore": "#ffcf6b", "dimensione": 1.2, "distanza": 1.3, "anelli": true, "descrizione": "Movimento e ritmo." },
+            { "nome": "Audio", "tipo": "oceano", "colore": "#46b3a0", "dimensione": 0.8, "distanza": 2.1, "descrizione": "Suono sincronizzato." }
+          ]
+        },
+        {
+          "id": "reel", "nome": "Reel Social", "stato": "idea", "anno": 2026,
+          "coloreStella": "#ffd76b", "dimensione": 0.8,
+          "descrizione": "Loop animati pensati per i social.",
+          "tecnologie": ["Motion", "Brand"], "link": "",
+          "pianeti": [
+            { "nome": "Loop", "tipo": "roccioso", "colore": "#bd8350", "dimensione": 0.7, "distanza": 1.2, "descrizione": "Animazioni in ciclo." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arvr", "nome": "AR / VR", "colore": "#8a7bff",
+      "descrizione": "Realtà aumentata e virtuale, esperienze immersive.",
+      "progetti": [
+        {
+          "id": "filtro-ar", "nome": "Filtro AR", "stato": "idea", "anno": 2026,
+          "coloreStella": "#a99bff", "dimensione": 0.9,
+          "descrizione": "Effetto in realtà aumentata per il volto o lo spazio.",
+          "tecnologie": ["AR", "3D"], "link": "",
+          "pianeti": [
+            { "nome": "Tracciamento", "tipo": "ghiacciato", "colore": "#cfc6ff", "dimensione": 0.7, "distanza": 1.2, "descrizione": "Riconoscimento dell'ambiente." },
+            { "nome": "Effetto 3D", "tipo": "gassoso", "colore": "#8a7bff", "dimensione": 1.1, "distanza": 2.0, "anelli": true, "descrizione": "Gli elementi aumentati." }
+          ]
+        },
+        {
+          "id": "vr-museo", "nome": "Esperienza VR", "stato": "idea", "anno": 2026,
+          "coloreStella": "#b6a8ff", "dimensione": 1.0,
+          "descrizione": "Visita immersiva di uno spazio culturale in VR.",
+          "tecnologie": ["Unity", "VR"], "link": "",
+          "pianeti": [
+            { "nome": "Ambiente", "tipo": "oceano", "colore": "#6a7fd0", "dimensione": 1.0, "distanza": 1.4, "descrizione": "Lo spazio virtuale." },
+            { "nome": "Interazioni", "tipo": "lava", "colore": "#ff6a3d", "dimensione": 0.8, "distanza": 2.3, "descrizione": "Cosa puoi toccare." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "code", "nome": "Creative Coding & Data Viz", "colore": "#2ee6a6",
+      "descrizione": "Arte generativa e visualizzazione dei dati.",
+      "progetti": [
+        {
+          "id": "generative", "nome": "Arte Generativa", "stato": "in corso", "anno": 2026,
+          "coloreStella": "#7df0c0", "dimensione": 1.0,
+          "descrizione": "Composizioni che nascono dal codice.",
+          "tecnologie": ["Processing", "p5.js"], "link": "",
+          "pianeti": [
+            { "nome": "Algoritmo", "tipo": "gassoso", "colore": "#2ee6a6", "dimensione": 1.2, "distanza": 1.3, "anelli": true, "descrizione": "Le regole del sistema." },
+            { "nome": "Output", "tipo": "roccioso", "colore": "#b5824e", "dimensione": 0.7, "distanza": 2.1, "descrizione": "Le immagini finali." }
+          ]
+        },
+        {
+          "id": "data-viz", "nome": "Data Visualization", "stato": "idea", "anno": 2026,
+          "coloreStella": "#6ae0c0", "dimensione": 0.8,
+          "descrizione": "Dati raccontati in modo visivo (e sonoro).",
+          "tecnologie": ["D3.js", "Data design"], "link": "",
+          "pianeti": [
+            { "nome": "Dataset", "tipo": "oceano", "colore": "#3da9c9", "dimensione": 0.9, "distanza": 1.2, "descrizione": "I dati di partenza." },
+            { "nome": "Visualizzazione", "tipo": "ghiacciato", "colore": "#d6f0ff", "dimensione": 0.7, "distanza": 2.0, "descrizione": "Forme e colori dei dati." }
+          ]
+        }
+      ]
+    }
+  ]
+}

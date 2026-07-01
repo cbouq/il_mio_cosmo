@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIKE × Kiosk — Atlas</title>
+<style>
+:root{
+  --nk-bg:#000000;
+  --nk-bg2:#04060a;
+  --nk-holo:#7fdfff;
+  --nk-holo-soft:rgba(127,223,255,.55);
+  --nk-white:#f4f8ff;
+  --nk-dim:#7d93a8;
+  --nk-volt:#d4ff37;
+  --nk-red:#e60023;
+  --ease:cubic-bezier(.16,.84,.44,1);
+  --gm-bg:#080312;
+  --gm-red:#e60012;
+  --gm-blue:#0085c7;
+  --gm-yellow:#f4c300;
+  --gm-green:#009f3d;
+  --gm-black:#111;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",Inter,system-ui,sans-serif;
+  background:#000;color:var(--nk-white);overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+/* Fixed 9:16 design size; scaled to fit any screen via JS (fitKiosk) */
+#kiosk{
+  position:absolute;top:50%;left:50%;
+  width:430px;height:764.444px;
+  transform:translate(-50%,-50%) scale(1);transform-origin:center center;
+  background:var(--nk-bg);overflow:hidden;box-shadow:0 0 80px rgba(0,0,0,.9);
+}
+
+/* ===== ambient ===== */
+.holo-bg{position:absolute;inset:0;overflow:hidden;z-index:0}
+.holo-bg::before{
+  content:"";position:absolute;inset:-25%;
+  background:
+    radial-gradient(closest-side at 50% 35%, rgba(127,223,255,.10), transparent 62%),
+    radial-gradient(closest-side at 75% 85%, rgba(80,120,255,.07), transparent 60%);
+  animation:drift 26s ease-in-out infinite alternate;
+}
+@keyframes drift{to{transform:translate3d(2%,-2%,0) scale(1.04)}}
+.scanlines{position:absolute;inset:0;pointer-events:none;z-index:5;
+  background:repeating-linear-gradient(0deg,rgba(127,223,255,.022) 0 2px,transparent 2px 4px);
+  mix-blend-mode:screen}
+
+/* ===== screens ===== */
+.screen{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
+  padding:26px 22px;opacity:0;pointer-events:none;transform:translateY(12px);
+  transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.screen.active{opacity:1;pointer-events:auto;transform:none}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;letter-spacing:.22em;color:var(--nk-dim);text-transform:uppercase;margin-bottom:6px}
+.swoosh{width:54px;height:auto;fill:var(--nk-white);filter:drop-shadow(0 0 8px rgba(127,223,255,.5))}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--nk-volt);box-shadow:0 0 10px var(--nk-volt);margin-right:6px;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+.eyebrow{font-size:11px;letter-spacing:.32em;color:var(--nk-holo);text-transform:uppercase;margin-bottom:14px}
+h1{font-size:46px;line-height:.95;font-weight:800;letter-spacing:-.02em}
+h1 .thin{font-weight:300;color:var(--nk-dim)}
+h2{font-size:25px;font-weight:700;letter-spacing:-.01em}
+.lead{color:var(--nk-dim);font-size:14px;line-height:1.5;margin-top:10px;max-width:92%}
+
+.btn{appearance:none;cursor:pointer;font:inherit;color:var(--nk-white);
+  background:linear-gradient(160deg,rgba(127,223,255,.16),rgba(127,223,255,.03));
+  border:1px solid var(--nk-holo-soft);border-radius:14px;padding:16px 20px;
+  font-size:15px;font-weight:600;display:flex;align-items:center;gap:12px;justify-content:center;
+  transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(127,223,255,.18);border-color:var(--nk-holo)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:var(--nk-white);color:#000;border:none;font-weight:800}
+.btn.primary:hover{box-shadow:0 8px 36px rgba(244,248,255,.35)}
+.btn.ghost{background:transparent;border-color:rgba(127,223,255,.2);color:var(--nk-dim)}
+.btn.full{width:100%}.btn.lg{padding:20px;font-size:17px}
+.row{display:flex;gap:12px}
+
+/* progress */
+.progress{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:20;display:none;gap:7px}
+.progress .pd{width:24px;height:3px;border-radius:2px;background:rgba(127,223,255,.18)}
+.progress .pd.on{background:var(--nk-holo);box-shadow:0 0 8px var(--nk-holo-soft)}
+
+/* ============ ATTRACT ============ */
+#s-attract{justify-content:flex-end}
+#s-attract h1{font-size:62px}
+.ai-sphere{position:absolute;top:4%;left:50%;transform:translateX(-50%);
+  width:300px;height:300px;z-index:1;filter:drop-shadow(0 0 30px rgba(127,223,255,.35))}
+.hero{margin-top:auto}
+.attract-hint{font-size:12px;color:var(--nk-dim);letter-spacing:.2em;text-transform:uppercase;
+  margin-top:18px;text-align:center;animation:pulse 2.6s infinite}
+
+/* ============================================================
+   AI CORE  (orb + floating bubbles)
+   ============================================================ */
+#s-ai{padding:0;overflow:hidden}
+.ai-stage{position:absolute;inset:0;z-index:2}
+.ai-topbar{position:absolute;top:24px;left:22px;right:22px;z-index:8;
+  display:flex;justify-content:space-between;font-size:11px;letter-spacing:.22em;
+  color:var(--nk-dim);text-transform:uppercase}
+
+/* orb */
+.orb-wrap{position:absolute;top:13%;left:50%;transform:translateX(-50%);z-index:6;
+  width:150px;height:150px;display:grid;place-items:center}
+.orb{width:120px;height:120px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 38% 32%, rgba(127,223,255,.9), rgba(40,120,200,.35) 45%, rgba(10,30,60,.1) 70%);
+  box-shadow:0 0 60px rgba(127,223,255,.5),0 0 120px rgba(80,140,255,.25),inset 0 0 40px rgba(255,255,255,.3);
+  animation:orbPulse 5s ease-in-out infinite}
+@keyframes orbPulse{50%{transform:scale(1.06);box-shadow:0 0 80px rgba(127,223,255,.7),0 0 150px rgba(80,140,255,.4),inset 0 0 50px rgba(255,255,255,.45)}}
+.orb::before,.orb::after{content:"";position:absolute;inset:-14px;border-radius:50%;
+  border:1px solid rgba(127,223,255,.25)}
+.orb::after{inset:-28px;border-color:rgba(127,223,255,.12);animation:spin 16s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orb.speaking{animation:orbSpeak 1.4s ease-in-out infinite}
+@keyframes orbSpeak{0%,100%{transform:scale(1)}25%{transform:scale(1.1)}60%{transform:scale(.97)}}
+
+/* AI caption */
+.ai-caption{position:absolute;top:31%;left:50%;transform:translateX(-50%);z-index:7;
+  width:88%;text-align:center;font-size:19px;font-weight:600;line-height:1.4;
+  min-height:60px;text-shadow:0 2px 18px rgba(0,0,0,.8)}
+.ai-caption .cursor{display:inline-block;width:2px;height:.9em;background:var(--nk-holo);
+  margin-left:2px;vertical-align:middle;animation:pulse .9s infinite}
+
+/* bubble field */
+.bubble-field{position:absolute;top:42%;left:0;right:0;bottom:120px;z-index:4;overflow:hidden}
+.bubble{position:absolute;display:grid;place-items:center;text-align:center;cursor:pointer;
+  border-radius:50%;padding:10px;will-change:transform;
+  background:radial-gradient(circle at 38% 32%, rgba(127,223,255,.16), rgba(20,40,70,.28) 70%);
+  border:1px solid rgba(127,223,255,.35);
+  box-shadow:0 0 24px rgba(127,223,255,.15),inset 0 0 22px rgba(127,223,255,.08);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:opacity .8s var(--ease),border-color .3s,box-shadow .3s;
+  font-size:13px;font-weight:600;color:var(--nk-white);user-select:none}
+.bubble .emo{font-size:24px;display:block;margin-bottom:3px;filter:drop-shadow(0 0 6px rgba(127,223,255,.4))}
+.bubble:hover{border-color:var(--nk-holo);box-shadow:0 0 36px rgba(127,223,255,.4),inset 0 0 26px rgba(127,223,255,.18)}
+.bubble.pop-in{animation:popIn .7s var(--ease) both}
+@keyframes popIn{from{opacity:0;transform:scale(.4)}to{opacity:1}}
+.bubble.pop-out{animation:popOut .5s var(--ease) forwards}
+@keyframes popOut{to{opacity:0;transform:scale(.3)}}
+
+/* voice dock */
+.voice-dock{position:absolute;bottom:26px;left:22px;right:22px;z-index:8;
+  display:flex;flex-direction:column;align-items:center;gap:10px}
+.mic{width:64px;height:64px;border-radius:50%;flex:none;display:grid;place-items:center;
+  border:1px solid var(--nk-holo-soft);background:rgba(10,18,28,.6);cursor:pointer;transition:.2s;
+  box-shadow:0 0 26px rgba(127,223,255,.18)}
+.mic:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(127,223,255,.4)}
+.mic.live{background:var(--nk-red);border-color:var(--nk-red);box-shadow:0 0 30px rgba(230,0,35,.6);animation:pulse 1s infinite}
+.mic svg{width:28px;height:28px;fill:var(--nk-white)}
+.voice-hint{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--nk-dim)}
+
+/* ============ SCAN ============ */
+#s-scan{justify-content:center;align-items:center;text-align:center}
+.scanstage{position:relative;width:230px;height:360px;margin:18px auto}
+.body-svg{width:100%;height:100%;filter:drop-shadow(0 0 18px rgba(127,223,255,.3))}
+.body-svg path,.body-svg circle,.body-svg ellipse{fill:none;stroke:var(--nk-holo);stroke-width:1.4;opacity:.55}
+.scanline{position:absolute;left:-10%;width:120%;height:3px;top:0;
+  background:linear-gradient(90deg,transparent,var(--nk-holo),transparent);
+  box-shadow:0 0 18px 4px var(--nk-holo-soft);opacity:0}
+.scanning .scanline{opacity:1;animation:scanim 2.4s var(--ease) forwards}
+@keyframes scanim{0%{top:0}100%{top:100%}}
+.scan-readout{font-family:ui-monospace,monospace;font-size:12px;color:var(--nk-holo);
+  letter-spacing:.1em;min-height:18px;margin-top:6px}
+.measures{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:18px}
+.glass{background:linear-gradient(160deg,rgba(18,24,33,.55),rgba(30,40,54,.3));
+  border:1px solid rgba(127,223,255,.18);border-radius:18px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.measure{padding:14px;text-align:left}
+.measure .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--nk-dim)}
+.measure .v{font-size:24px;font-weight:800;margin-top:4px}
+.measure .v small{font-size:12px;color:var(--nk-dim);font-weight:500}
+.measure.reveal{animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+
+/* ============ STYLE ============ */
+.style-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.style-tag{font-size:11px;padding:6px 12px;border-radius:999px;
+  border:1px solid rgba(127,223,255,.2);color:var(--nk-holo);background:rgba(30,40,54,.3)}
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;overflow-y:auto;flex:1;padding-bottom:8px}
+.style-grid::-webkit-scrollbar{width:0}
+.product{padding:14px;display:flex;flex-direction:column;cursor:pointer;
+  transition:.25s var(--ease);position:relative;overflow:hidden}
+.product:hover{transform:translateY(-3px);border-color:var(--nk-holo)}
+.product.sel{border-color:var(--nk-volt);box-shadow:0 0 0 1px var(--nk-volt) inset}
+.product .pic{height:104px;border-radius:12px;display:grid;place-items:center;margin-bottom:10px;
+  background:linear-gradient(160deg,#0c1119,#06090d)}
+.product .pic svg{width:80%;height:80%}
+.product .pic img{width:100%;height:100%;object-fit:contain;padding:6px}
+.product .name{font-size:14px;font-weight:700}
+.product .meta{font-size:11px;color:var(--nk-dim);margin-top:3px}
+.product .price{font-size:14px;font-weight:800;margin-top:8px}
+.product .fit{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;
+  background:var(--nk-volt);color:#000;padding:3px 8px;border-radius:999px}
+
+/* ============ LOCATE ============ */
+.floormap{flex:1;display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.floor{padding:16px;display:flex;align-items:center;gap:14px;opacity:.45;transition:.4s var(--ease)}
+.floor.target{opacity:1;border-color:var(--nk-volt);box-shadow:0 0 30px rgba(212,255,55,.15)}
+.floor .num{font-size:28px;font-weight:800;color:var(--nk-dim);width:46px;text-align:center}
+.floor.target .num{color:var(--nk-volt)}
+.floor .info .t{font-size:15px;font-weight:700}
+.floor .info .d{font-size:12px;color:var(--nk-dim);margin-top:2px}
+.floor .pin{margin-left:auto;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--nk-volt);font-weight:700;display:none}
+.floor.target .pin{display:block;animation:pulse 1.6s infinite}
+.pickup{padding:16px;margin-top:8px;text-align:center}
+.pickup .code{font-family:ui-monospace,monospace;font-size:28px;font-weight:800;
+  letter-spacing:.18em;color:var(--nk-volt);margin-top:6px}
+
+/* ============================================================
+   GAMES FACE — full Olympic program
+   ============================================================ */
+#games-face{position:absolute;inset:0;z-index:30;display:none;flex-direction:column;
+  padding:24px 20px;background:
+    radial-gradient(closest-side at 18% 8%, rgba(0,133,199,.22),transparent 55%),
+    radial-gradient(closest-side at 86% 90%, rgba(230,0,18,.22),transparent 55%),
+    var(--gm-bg);animation:flip .6s var(--ease)}
+@keyframes flip{from{opacity:0;transform:rotateY(10deg)}to{opacity:1;transform:none}}
+#games-face.on{display:flex}
+.gm-top{display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#cdd6e0}
+.rings{display:flex}
+.ring{width:17px;height:17px;border-radius:50%;border:3px solid;margin-left:-5px}
+.ring.b{border-color:var(--gm-blue)}.ring.k{border-color:#bbb}
+.ring.r{border-color:var(--gm-red)}.ring.y{border-color:var(--gm-yellow)}.ring.g{border-color:var(--gm-green)}
+.gm-title{margin-top:16px}
+.gm-title .k{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gm-yellow)}
+.gm-title h1{font-size:34px;line-height:1;font-weight:900;margin-top:6px;color:#fff;text-shadow:0 0 24px rgba(0,133,199,.4)}
+.gm-title h1 .red{color:var(--gm-red)}
+.gm-sub{color:#5b6b78;font-size:13px;margin-top:10px;line-height:1.45}
+.wii-bar{display:flex;gap:10px;margin-top:14px}
+.wiimote{flex:1;padding:11px;border-radius:13px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:9px;font-size:12px}
+.wiimote .dot{width:10px;height:10px;border-radius:50%;background:#555}
+.wiimote.p1 .dot{background:var(--gm-blue);box-shadow:0 0 10px var(--gm-blue)}
+.wiimote.p2 .dot{background:var(--gm-red);box-shadow:0 0 10px var(--gm-red)}
+
+.cat-tabs{display:flex;gap:8px;margin-top:16px;overflow-x:auto;padding-bottom:4px}
+.cat-tabs::-webkit-scrollbar{height:0}
+.cat-tab{flex:none;font-size:12px;padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#cdd6e0;transition:.2s}
+.cat-tab.on{background:#fff;color:#111;font-weight:800;border-color:#fff}
+
+.sport-grid{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:11px;flex:1;overflow-y:auto;padding-bottom:8px}
+.sport-grid::-webkit-scrollbar{width:0}
+.sport-card{padding:14px;border-radius:18px;cursor:pointer;position:relative;overflow:hidden;
+  background:linear-gradient(150deg,rgba(255,255,255,.1),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.14);transition:.22s var(--ease)}
+.sport-card::before{content:"";position:absolute;inset:0;opacity:.16;
+  background:radial-gradient(circle at 80% -10%, var(--accent,#0085c7), transparent 60%)}
+.sport-card:hover{transform:translateY(-4px) scale(1.02);border-color:#fff;
+  box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.sport-card .ico{font-size:34px;display:block;margin-bottom:8px;position:relative;
+  filter:drop-shadow(0 2px 10px rgba(0,0,0,.4))}
+.sport-card .st{font-size:14px;font-weight:900;color:#fff;position:relative;letter-spacing:-.01em}
+.sport-card .sd{font-size:11px;color:#c2cdd8;margin-top:3px;line-height:1.3;position:relative}
+.sport-card .rec{position:absolute;top:10px;right:12px;font-size:10px;font-weight:900;color:var(--gm-yellow);
+  background:rgba(0,0,0,.3);padding:3px 7px;border-radius:999px}
+.sport-card .badge{display:inline-block;margin-top:9px;font-size:9px;font-weight:900;letter-spacing:.1em;
+  text-transform:uppercase;color:#fff;padding:4px 9px;border-radius:999px;position:relative;
+  background:var(--accent,#0085c7)}
+
+.gm-btn{appearance:none;cursor:pointer;font:inherit;font-weight:800;font-size:15px;padding:16px;
+  border-radius:14px;border:none;color:#fff;background:linear-gradient(160deg,var(--gm-blue),#005a87);transition:.2s var(--ease)}
+.gm-btn:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(0,133,199,.4)}
+.gm-btn.full{width:100%}.gm-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2)}
+
+/* PLAY */
+#play{position:absolute;inset:0;z-index:40;display:none;flex-direction:column;padding:22px 20px;background:var(--gm-bg)}
+#play.on{display:flex}
+.play-hud{display:flex;justify-content:space-between;align-items:center;color:#fff}
+.play-hud .score{font-size:32px;font-weight:900;color:var(--gm-yellow)}
+.play-hud .timer{font-size:20px;font-weight:800}
+.play-name{font-weight:800;font-size:14px;text-align:center;color:#fff}
+.play-canvas-wrap{flex:1;position:relative;margin:14px 0;border-radius:18px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#0d1830,#06101f)}
+#gameCanvas{width:100%;height:100%;display:block;touch-action:none}
+.play-hint{text-align:center;color:#5b6b78;font-size:12px;margin-bottom:10px;min-height:16px}
+.play-controls{display:flex;gap:10px}
+.act-btn{flex:1;padding:20px;border-radius:16px;font-size:17px;font-weight:900;border:none;cursor:pointer;color:#fff;transition:.1s}
+.act-btn:active{transform:scale(.95)}
+.act-btn.a{background:linear-gradient(160deg,var(--gm-red),#b4000f);box-shadow:0 8px 24px rgba(230,0,18,.4)}
+.act-btn.b{background:linear-gradient(160deg,var(--gm-blue),#005a87);box-shadow:0 8px 24px rgba(0,133,199,.4)}
+.combo-flash{position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  font-size:24px;font-weight:900;color:var(--gm-yellow);text-shadow:0 0 18px rgba(244,195,0,.6);
+  opacity:0;pointer-events:none}
+.combo-flash.show{animation:comboPop .6s var(--ease)}
+@keyframes comboPop{0%{opacity:0;transform:translateX(-50%) scale(.5)}40%{opacity:1;transform:translateX(-50%) scale(1.2)}100%{opacity:0;transform:translateX(-50%) scale(1)}}
+
+/* BOARD */
+#board{position:absolute;inset:0;z-index:41;display:none;flex-direction:column;padding:24px 20px;background:var(--gm-bg)}
+#board.on{display:flex}
+.lb-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;
+  background:rgba(255,255,255,.05);margin-bottom:8px}
+.lb-row.you{background:linear-gradient(90deg,rgba(244,195,0,.18),rgba(255,255,255,.04));border:1px solid var(--gm-yellow)}
+.lb-row .rank{font-size:18px;font-weight:900;width:42px;color:var(--gm-yellow)}
+.lb-row .nm{font-weight:700;color:#fff}
+.lb-row .sc{margin-left:auto;font-weight:800;color:#cdd6e0}
+.lb-row .tag{font-size:9px;background:var(--gm-red);color:#fff;padding:2px 6px;border-radius:6px;margin-left:8px;font-weight:800}
+.reward{padding:18px;border-radius:18px;margin-top:12px;text-align:center;
+  background:linear-gradient(160deg,rgba(244,195,0,.16),rgba(230,0,18,.08));border:1px solid var(--gm-yellow)}
+.reward.special{border-color:#fff;background:linear-gradient(160deg,rgba(0,133,199,.22),rgba(230,0,18,.18))}
+.reward .lbl{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--gm-yellow)}
+.reward .disc{font-size:48px;font-weight:900;color:#fff;line-height:1;margin:6px 0}
+.reward .code{font-family:ui-monospace,monospace;font-size:19px;letter-spacing:.16em;color:var(--gm-yellow);font-weight:800}
+.reward .meta{font-size:12px;color:#cdd6e0;margin-top:8px;line-height:1.5}
+
+.face-toggle{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:11px 22px;border-radius:999px;
+  cursor:pointer;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+  color:#fff;backdrop-filter:blur(10px);transition:.2s}
+.face-toggle:hover{background:rgba(255,255,255,.16)}
+.confetti{position:absolute;width:9px;height:14px;top:-20px;z-index:60;border-radius:2px}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.2s!important}}
+
+/* ====================================================================
+   WII SPORTS THEME — games / minigame catalog (light, breathable)
+   ==================================================================== */
+#games-face{
+  background:
+    radial-gradient(120% 60% at 50% -10%, #ffffff 0%, #eef4f8 45%, #dde8ef 100%);
+  color:#24323d;padding:26px 22px 80px;
+}
+#games-face .gm-top{color:#6a7884;font-weight:700}
+.gm-title{margin-top:20px}
+.gm-title .k{color:#0a86c6;letter-spacing:.26em;font-weight:800}
+.gm-title h1{
+  color:#0a86c6;text-shadow:none;font-weight:900;font-size:40px;letter-spacing:-.5px;margin-top:8px;
+}
+.gm-title h1 .red{color:#e60012}
+.gm-sub{color:#6a7884;font-size:13px;margin-top:12px;line-height:1.5}
+.wii-bar{gap:12px;margin-top:18px}
+.wiimote{
+  background:#ffffff;border:1px solid #d8e2ea;color:#3c4a56;border-radius:16px;
+  box-shadow:0 2px 9px rgba(20,55,90,.07);padding:12px 13px;font-weight:600
+}
+.wiimote .dot{background:#c2ccd5}
+.wiimote.p1 .dot{background:#0a9bdc;box-shadow:0 0 10px #0a9bdc}
+.wiimote.p2 .dot{background:#e60012;box-shadow:0 0 10px #e60012}
+.cat-tabs{gap:10px;margin-top:20px;padding-bottom:6px}
+.cat-tab{
+  background:#ffffff;border:1px solid #d8e2ea;color:#6a7884;border-radius:999px;
+  padding:11px 17px;font-weight:800;box-shadow:0 1px 5px rgba(20,55,90,.05)
+}
+.cat-tab.on{background:#0a9bdc;border-color:#0a9bdc;color:#fff;box-shadow:0 4px 12px rgba(10,155,220,.35)}
+.sport-grid{grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;padding-bottom:18px}
+.sport-card{
+  background:#ffffff;border:1px solid #dde6ec;border-radius:24px;
+  padding:20px 16px 18px;box-shadow:0 5px 16px rgba(20,55,90,.09);
+  display:flex;flex-direction:column;align-items:center;text-align:center;min-height:168px
+}
+.sport-card::before{opacity:.10;border-radius:24px}
+.sport-card:hover{transform:translateY(-5px) scale(1.015);border-color:var(--accent,#0a9bdc);
+  box-shadow:0 14px 30px rgba(20,55,90,.18)}
+.sport-card .ico{
+  font-size:38px;margin:0 auto 12px;width:78px;height:78px;border-radius:50%;
+  display:grid;place-items:center;filter:none;
+  background:radial-gradient(circle at 50% 32%, #f4fafe, #e4eff6);border:1px solid #e6eef4;
+  box-shadow:inset 0 1px 3px rgba(255,255,255,.9),0 2px 6px rgba(20,55,90,.06)
+}
+.sport-card .st{color:#24323d;font-size:15px;font-weight:900;letter-spacing:-.2px}
+.sport-card .sd{color:#7e8c98;font-size:11px;margin-top:5px;line-height:1.3}
+.sport-card .rec{color:#0a86c6;background:#eaf5fb;top:12px;right:12px;font-weight:900}
+.sport-card .badge{
+  background:var(--accent,#0a9bdc);color:#fff;margin-top:13px;border-radius:999px;
+  padding:6px 13px;font-size:9px;box-shadow:0 2px 7px rgba(20,55,90,.14)
+}
+.gm-btn{background:#0a9bdc;color:#fff;border-radius:999px;font-weight:800;
+  box-shadow:0 4px 13px rgba(10,155,220,.3)}
+.gm-btn:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(10,155,220,.42);background:#0a90cc}
+.gm-btn.ghost{background:#fff;border:1px solid #d2dce4;color:#6a7884;box-shadow:0 2px 7px rgba(20,55,90,.06)}
+.gm-btn.ghost:hover{background:#f2f6f9}
+#games-face .row{margin-top:14px}
+
+/* PLAY (gameplay chrome) */
+#play{background:radial-gradient(120% 60% at 50% -10%, #ffffff 0%, #eef4f8 45%, #dde8ef 100%);color:#24323d}
+.play-hud{color:#24323d}
+.play-hud .score{color:#0a86c6}
+.play-hud .timer{color:#24323d}
+.play-name{color:#24323d}
+.play-hint{color:#6a7884}
+.play-canvas-wrap{border:1px solid #cdd9e2;box-shadow:0 6px 18px rgba(20,55,90,.12)}
+
+/* BOARD (leaderboard) */
+#board{background:radial-gradient(120% 60% at 50% -10%, #ffffff 0%, #eef4f8 45%, #dde8ef 100%);color:#24323d}
+#board .gm-top{color:#6a7884}
+.lb-row{background:#fff;border:1px solid #e3ebf1;color:#24323d}
+.lb-row .rank{color:#0a86c6}
+.lb-row .nm{color:#24323d}
+.lb-row .sc{color:#6a7884}
+.lb-row.you{background:linear-gradient(90deg,#fff7dc,#ffffff);border:1px solid #f4c300}
+.reward{background:#ffffff;border:1px solid #f1c63f;box-shadow:0 6px 18px rgba(20,55,90,.12)}
+.reward.special{background:linear-gradient(160deg,#eaf6fc,#ffffff);border-color:#0a9bdc}
+.reward .lbl{color:#c79100}
+.reward .disc{color:#0a86c6}
+.reward .code{color:#c79100}
+.reward .meta{color:#6a7884}
+
+/* ===== GAMES CAROUSEL — prominent horizontal carousel ===== */
+#games-face{padding:22px 20px 76px}
+.gm-title{margin-top:12px}
+.gm-title h1{font-size:30px}
+.gm-sub{font-size:12px;margin-top:8px;line-height:1.35}
+.wii-bar{margin-top:12px}
+.wiimote{padding:9px 11px;font-size:11px}
+.cat-tabs{margin-top:14px}
+.carousel-head{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.carousel-label{font-size:14px;font-weight:900;color:#0a86c6}
+.carousel-nav{display:flex;gap:8px}
+.cbtn{width:40px;height:40px;border-radius:50%;border:1px solid #cdd9e2;background:#fff;color:#0a86c6;
+  font-size:22px;font-weight:900;line-height:1;cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 2px 8px rgba(20,55,90,.12);transition:.15s}
+.cbtn:hover{background:#0a9bdc;color:#fff;border-color:#0a9bdc;transform:translateY(-1px)}
+.cbtn:active{transform:scale(.94)}
+.sport-carousel{display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scroll-behavior:smooth;flex:1;min-height:0;
+  margin-top:12px;padding:6px 2px 12px;-webkit-overflow-scrolling:touch}
+.sport-carousel::-webkit-scrollbar{height:0}
+.sport-carousel .sport-card{
+  flex:0 0 80%;scroll-snap-align:center;min-height:0;height:auto;justify-content:center;
+  padding:24px 20px;border-radius:28px;box-shadow:0 12px 30px rgba(20,55,90,.16)}
+.sport-carousel .sport-card .ico{width:112px;height:112px;font-size:58px;margin-bottom:16px}
+.sport-carousel .sport-card .st{font-size:24px}
+.sport-carousel .sport-card .sd{font-size:13px;margin-top:8px;max-width:92%}
+.sport-carousel .sport-card .badge{margin-top:16px;font-size:11px;padding:7px 16px}
+.sport-carousel .sport-card .rec{font-size:11px;top:16px;right:16px}
+.play-cta{margin-top:20px;border:none;border-radius:999px;cursor:pointer;
+  background:var(--accent,#0a9bdc);color:#fff;font-weight:900;font-size:15px;letter-spacing:.02em;
+  padding:13px 32px;box-shadow:0 7px 18px rgba(20,55,90,.22)}
+.sport-carousel .sport-card:hover{transform:translateY(-3px)}
+.sport-carousel .sport-card:hover .play-cta{filter:brightness(1.07)}
+.rings .olympic-logo{height:30px;width:auto;display:block}
+.gm-top .rings{margin-left:auto}
+</style>
+</head>
+<body>
+<div id="kiosk">
+  <div class="holo-bg"></div>
+  <div class="scanlines"></div>
+  <div class="progress" id="progress">
+    <div class="pd" data-p="1"></div><div class="pd" data-p="2"></div>
+    <div class="pd" data-p="3"></div><div class="pd" data-p="4"></div>
+  </div>
+
+  <!-- ATTRACT -->
+  <section class="screen active" id="s-attract">
+    <canvas id="aiSphere" class="ai-sphere"></canvas>
+    <div class="hero">
+      <svg class="swoosh" viewBox="0 7.8 24 8.4"><path d="M24 7.8 6.442 15.276c-1.456.616-2.679.925-3.668.925-1.12 0-1.933-.392-2.437-1.177-.317-.504-.41-1.143-.28-1.918.13-.775.476-1.6 1.036-2.478.467-.71 1.232-1.643 2.297-2.8-.14.225-1.353 2.198-.354 3.396.355.42.93.63 1.727.63.625 0 1.345-.13 2.157-.392L24 7.8Z"/></svg>
+      <div class="eyebrow" style="margin-top:18px">Atlas · AI Styling Concierge</div>
+      <h1>Trova<br>il tuo<br><span class="thin">fit.</span></h1>
+      <div class="lead">Parla con Atlas, fatti scansionare, ricevi una direzione di stile su misura. E gioca per sbloccare lo sconto.</div>
+      <button class="btn primary full lg" style="margin-top:30px" onclick="go('s-ai'); startAI()">Inizia · Tocca o parla</button>
+      <div class="attract-hint">◎ Comandi vocali attivi · oppure usa i tasti</div>
+    </div>
+  </section>
+
+  <!-- AI CORE -->
+  <section class="screen" id="s-ai">
+    <div class="ai-stage">
+      <div class="ai-topbar"><span><span class="status-dot"></span>ATLAS AI · ONLINE</span><span>FASE 01 / 04</span></div>
+      <div class="orb-wrap"><div class="orb" id="orb"></div></div>
+      <div class="ai-caption" id="aiCaption"></div>
+      <div class="bubble-field" id="bubbleField"></div>
+      <div class="voice-dock">
+        <div class="mic" id="mic" onclick="toggleVoice()">
+          <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
+        </div>
+        <div class="voice-hint" id="voiceHint">Tocca il microfono o scegli una bolla</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCAN -->
+  <section class="screen" id="s-scan">
+    <div class="topbar" style="width:100%"><span><span class="status-dot"></span>SENSORI · LIDAR</span><span>FASE 02 / 04</span></div>
+    <div class="eyebrow" style="margin-top:auto">Scansione corporea</div>
+    <h2 id="scanTitle" style="text-align:center">Mettiti nella sagoma</h2>
+    <div class="scanstage" id="scanstage">
+      <svg class="body-svg" viewBox="0 0 200 300">
+        <ellipse cx="100" cy="42" rx="24" ry="28"/>
+        <path d="M100 70 C70 78 64 120 66 170 C68 210 78 250 80 290 M100 70 C130 78 136 120 134 170 C132 210 122 250 120 290"/>
+        <path d="M70 90 C50 110 42 150 40 185 M130 90 C150 110 158 150 160 185"/>
+        <circle cx="100" cy="42" r="36" stroke-dasharray="3 5"/>
+      </svg>
+      <div class="scanline"></div>
+    </div>
+    <div class="scan-readout" id="scanReadout">In attesa…</div>
+    <div class="measures" id="measures"></div>
+    <button class="btn primary full lg" id="scanBtn" style="margin-top:18px" onclick="runScan()">Avvia scansione</button>
+    <div style="margin-top:auto"></div>
+  </section>
+
+  <!-- STYLE -->
+  <section class="screen" id="s-style">
+    <div class="topbar"><span><span class="status-dot"></span>STYLE ENGINE</span><span>FASE 03 / 04</span></div>
+    <h2>La tua direzione</h2>
+    <div class="lead" id="styleLead" style="margin-top:6px;font-size:13px"></div>
+    <div class="style-tags" id="styleTags"></div>
+    <div class="style-grid" id="styleGrid"></div>
+    <button class="btn primary full lg" id="styleNext" style="margin-top:12px" disabled
+            onclick="go('s-locate'); buildLocate()">Conferma selezione</button>
+  </section>
+
+  <!-- LOCATE -->
+  <section class="screen" id="s-locate">
+    <div class="topbar"><span><span class="status-dot"></span>WAYFINDING</span><span>FASE 04 / 04</span></div>
+    <h2>Dove ritirarlo</h2>
+    <div class="lead" id="locateLead" style="margin-top:6px;font-size:13px"></div>
+    <div class="floormap" id="floormap"></div>
+    <div class="pickup glass"><div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--nk-dim)">Mostra in cassa · Pickup ID</div>
+      <div class="code" id="pickupCode">NK-0000</div></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn ghost" style="flex:1" onclick="resetAll()">Nuovo cliente</button>
+      <button class="btn primary" style="flex:1.4" onclick="showGames()">Gioca per lo sconto →</button>
+    </div>
+  </section>
+
+  <!-- GAMES FACE -->
+  <div id="games-face">
+    <div class="gm-top"><span><span class="status-dot" style="background:var(--gm-red);box-shadow:0 0 10px var(--gm-red)"></span>OLYMPIC ARENA</span>
+      <div class="rings"><svg class="olympic-logo" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width="9.0" stroke-linecap="round" aria-label="Anelli olimpici"><circle cx="230" cy="55" r="45.0" stroke="#EE334E"/><circle cx="190" cy="100" r="45.0" stroke="#00A651"/><circle cx="150" cy="55" r="45.0" stroke="#000000"/><circle cx="110" cy="100" r="45.0" stroke="#FCB131"/><circle cx="70" cy="55" r="45.0" stroke="#0081C8"/><path d="M66.46 111.38 A45.0 45.0 0 0 1 66.61 88.08" stroke="#FCB131" stroke-linecap="butt"/><path d="M106.61 66.92 A45.0 45.0 0 0 1 106.46 43.62" stroke="#000000" stroke-linecap="butt"/><path d="M146.46 111.38 A45.0 45.0 0 0 1 146.61 88.08" stroke="#00A651" stroke-linecap="butt"/><path d="M186.61 66.92 A45.0 45.0 0 0 1 186.46 43.62" stroke="#EE334E" stroke-linecap="butt"/></svg></div></div>
+    <div class="gm-title"><div class="k">Nintendo × Olympic Games × Nike</div>
+      <h1>GIOCA. <span class="red">VINCI.</span> VESTI.</h1></div>
+    <div class="gm-sub">Scegli uno sport, gioca e accumula punti → sconto. Top 150: capsule Nike × Nintendo.</div>
+    <div class="wii-bar"><div class="wiimote p1"><span class="dot"></span>Wiimote P1 · connesso</div>
+      <div class="wiimote p2"><span class="dot"></span>Wiimote P2 · connesso</div></div>
+    <div class="cat-tabs" id="catTabs"></div>
+    <div class="carousel-head">
+      <span class="carousel-label">▶ Scegli il tuo gioco</span>
+      <div class="carousel-nav">
+        <button class="cbtn" onclick="scrollGames(-1)" aria-label="Precedente">‹</button>
+        <button class="cbtn" onclick="scrollGames(1)" aria-label="Successivo">›</button>
+      </div>
+    </div>
+    <div class="sport-carousel" id="sportGrid"></div>
+    <div class="row" style="gap:10px">
+      <button class="gm-btn ghost" style="flex:1" onclick="hideGames()">← Store</button>
+      <button class="gm-btn" style="flex:1.3" onclick="openBoard()">Classifica & Premi</button></div>
+  </div>
+
+  <!-- PLAY -->
+  <div id="play">
+    <div class="play-hud">
+      <div><div style="font-size:10px;letter-spacing:.2em;color:#5b6b78">PUNTEGGIO</div><div class="score" id="pScore">0</div></div>
+      <div><div class="play-name" id="pName"></div></div>
+      <div><div style="font-size:10px;letter-spacing:.2em;color:#5b6b78;text-align:right">TEMPO</div><div class="timer" id="pTimer">30</div></div>
+    </div>
+    <div class="play-canvas-wrap"><canvas id="gameCanvas"></canvas><div class="combo-flash" id="comboFlash"></div></div>
+    <div class="play-hint" id="pHint"></div>
+    <div class="play-controls" id="playControls"></div>
+  </div>
+
+  <!-- BOARD -->
+  <div id="board">
+    <div class="gm-top"><span>CLASSIFICA OLIMPICA</span>
+      <div class="rings"><svg class="olympic-logo" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width="9.0" stroke-linecap="round" aria-label="Anelli olimpici"><circle cx="230" cy="55" r="45.0" stroke="#EE334E"/><circle cx="190" cy="100" r="45.0" stroke="#00A651"/><circle cx="150" cy="55" r="45.0" stroke="#000000"/><circle cx="110" cy="100" r="45.0" stroke="#FCB131"/><circle cx="70" cy="55" r="45.0" stroke="#0081C8"/><path d="M66.46 111.38 A45.0 45.0 0 0 1 66.61 88.08" stroke="#FCB131" stroke-linecap="butt"/><path d="M106.61 66.92 A45.0 45.0 0 0 1 106.46 43.62" stroke="#000000" stroke-linecap="butt"/><path d="M146.46 111.38 A45.0 45.0 0 0 1 146.61 88.08" stroke="#00A651" stroke-linecap="butt"/><path d="M186.61 66.92 A45.0 45.0 0 0 1 186.46 43.62" stroke="#EE334E" stroke-linecap="butt"/></svg></div></div>
+    <div id="rewardSlot"></div>
+    <h2 style="color:#22303b;margin:16px 0 10px;font-size:19px">Top atleti di oggi</h2>
+    <div id="lbList" style="flex:1;overflow-y:auto"></div>
+    <div class="row" style="gap:10px;margin-top:8px">
+      <button class="gm-btn ghost" style="flex:1" onclick="closeBoard()">← Sport</button>
+      <button class="gm-btn" style="flex:1" onclick="useDiscount()">Usa sconto in Store</button></div>
+  </div>
+</div>
+
+<script>
+/* roundRect polyfill */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    if(typeof r==='number')r=[r,r,r,r];
+    this.beginPath();this.moveTo(x+r[0],y);
+    this.arcTo(x+w,y,x+w,y+h,r[1]);this.arcTo(x+w,y+h,x,y+h,r[2]);
+    this.arcTo(x,y+h,x,y,r[3]);this.arcTo(x,y,x+w,y,r[0]);this.closePath();return this;};
+}
+/* ============================================================
+   STATE
+   ============================================================ */
+const S={
+  intent:{garment:null,key:null,vibe:[],occasion:null},
+  measures:{},selected:null,
+  totalPoints:0,bestRank:999,discount:0,discountCode:null,special:false,pickupCode:null
+};
+
+
+function sizeLabel(){
+  const sk=GARMENT_META[S.intent.key].sizeKey;
+  if(sk==='shoe')return 'EU '+S.measures.shoe;
+  if(sk==='none')return 'Taglia unica';
+  return S.measures.top;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const map={'s-ai':1,'s-scan':2,'s-style':3,'s-locate':4};
+  const prog=document.getElementById('progress');
+  if(map[id]){prog.style.display='flex';
+    document.querySelectorAll('.pd').forEach(d=>d.classList.toggle('on',+d.dataset.p<=map[id]));
+  } else prog.style.display='none';
+}
+
+/* ============================================================
+   AI CORE — orb voice + floating bubble field
+   ============================================================ */
+const orb=()=>document.getElementById('orb');
+const captionEl=()=>document.getElementById('aiCaption');
+
+let typingTimer=null;
+function aiSpeak(text){
+  return new Promise(res=>{
+    orb().classList.add('speaking');
+    const el=captionEl();el.innerHTML='';
+    let i=0;clearInterval(typingTimer);
+    typingTimer=setInterval(()=>{
+      el.innerHTML=text.slice(0,i)+'<span class="cursor"></span>';
+      i++;
+      if(i>text.length){clearInterval(typingTimer);
+        el.innerHTML=text;orb().classList.remove('speaking');res();}
+    },26);
+  });
+}
+
+/* ---- floating bubble physics ---- */
+const bubbleField=()=>document.getElementById('bubbleField');
+let bubbles=[],bubbleRAF=null;
+function clearBubbles(instant){
+  const field=bubbleField();
+  window.__bubbleOpts=[];
+  if(instant){field.innerHTML='';bubbles=[];return;}
+  bubbles.forEach(b=>{b.el.classList.add('pop-out');setTimeout(()=>b.el.remove(),500);});
+  bubbles=[];
+}
+function spawnBubbles(options){
+  clearBubbles();
+  window.__bubbleOpts=options;
+  const field=bubbleField();
+  const W=field.clientWidth,H=field.clientHeight;
+  setTimeout(()=>{
+    options.forEach((opt,idx)=>{
+      const size=Math.max(78,Math.min(108, 70+opt.label.length*2.2));
+      const el=document.createElement('div');
+      el.className='bubble pop-in';
+      el.style.width=el.style.height=size+'px';
+      el.style.animationDelay=(idx*110)+'ms';
+      el.innerHTML=(opt.emo?`<span class="emo">${opt.emo}</span>`:'')+`<span>${opt.label}</span>`;
+      el.onclick=()=>{ if(el._dead)return; el._dead=true; opt.act(); };
+      field.appendChild(el);
+      // spread initial positions in a loose ring, avoid edges
+      const ang=(idx/options.length)*Math.PI*2 + Math.random()*0.5;
+      const rad=Math.min(W,H)*0.28;
+      const cx=W/2 + Math.cos(ang)*rad - size/2;
+      const cy=H/2 + Math.sin(ang)*rad*0.8 - size/2;
+      bubbles.push({
+        el,size,
+        x:Math.max(4,Math.min(W-size-4,cx)),
+        y:Math.max(4,Math.min(H-size-4,cy)),
+        vx:(Math.random()-.5)*0.18,   // VERY slow
+        vy:(Math.random()-.5)*0.18
+      });
+    });
+    if(!bubbleRAF) bubbleRAF=requestAnimationFrame(bubbleLoop);
+  },40);
+}
+function bubbleLoop(){
+  const field=bubbleField();
+  if(!field||!document.getElementById('s-ai').classList.contains('active')){
+    bubbleRAF=requestAnimationFrame(bubbleLoop);return;
+  }
+  const W=field.clientWidth,H=field.clientHeight;
+  // integrate
+  for(const b of bubbles){
+    b.x+=b.vx;b.y+=b.vy;
+    // gentle wall bounce
+    if(b.x<2){b.x=2;b.vx=Math.abs(b.vx);}
+    if(b.x>W-b.size-2){b.x=W-b.size-2;b.vx=-Math.abs(b.vx);}
+    if(b.y<2){b.y=2;b.vy=Math.abs(b.vy);}
+    if(b.y>H-b.size-2){b.y=H-b.size-2;b.vy=-Math.abs(b.vy);}
+  }
+  // soft collisions (bounce off each other, slowly)
+  for(let i=0;i<bubbles.length;i++){
+    for(let j=i+1;j<bubbles.length;j++){
+      const a=bubbles[i],c=bubbles[j];
+      const ax=a.x+a.size/2,ay=a.y+a.size/2,cx=c.x+c.size/2,cy=c.y+c.size/2;
+      let dx=cx-ax,dy=cy-ay;let dist=Math.hypot(dx,dy)||.001;
+      const min=(a.size+c.size)/2;
+      if(dist<min){
+        const overlap=(min-dist)/2;
+        const nx=dx/dist,ny=dy/dist;
+        a.x-=nx*overlap;a.y-=ny*overlap;
+        c.x+=nx*overlap;c.y+=ny*overlap;
+        // exchange a tiny bit of velocity along normal (elastic, damped)
+        const va=a.vx*nx+a.vy*ny, vc=c.vx*nx+c.vy*ny;
+        const diff=(vc-va);
+        a.vx+=diff*nx*0.5;a.vy+=diff*ny*0.5;
+        c.vx-=diff*nx*0.5;c.vy-=diff*ny*0.5;
+        // clamp speed so it always stays slow
+        for(const o of [a,c]){const sp=Math.hypot(o.vx,o.vy);const max=0.28;
+          if(sp>max){o.vx=o.vx/sp*max;o.vy=o.vy/sp*max;}}
+      }
+    }
+  }
+  for(const b of bubbles){ b.el.style.transform=`translate(${b.x}px,${b.y}px)`; }
+  bubbleRAF=requestAnimationFrame(bubbleLoop);
+}
+
+/* ---- conversation flow (bubble-driven) ---- */
+async function startAI(){
+  clearBubbles(true);
+  await aiSpeak("Ciao, sono Atlas. Cosa cerchi oggi?");
+  spawnBubbles([
+    {emo:'👟',label:'Calzature',act:()=>catShoes()},
+    {emo:'👕',label:'Top',act:()=>catTops()},
+    {emo:'👖',label:'Bottom',act:()=>catBottoms()},
+    {emo:'🥋',label:'Tute',act:()=>catSets()},
+    {emo:'🎒',label:'Accessori',act:()=>catAcc()},
+    {emo:'🏐',label:'Attrezzatura',act:()=>catEquip()},
+  ]);
+}
+async function catShoes(){
+  clearBubbles();
+  await aiSpeak("Calzature. Per sport o lifestyle?");
+  spawnBubbles([
+    {emo:'🏅',label:'Sport',act:()=>catShoesSport()},
+    {emo:'🔥',label:'Lifestyle',act:()=>catShoesLife()},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function catShoesSport(){
+  clearBubbles();
+  await aiSpeak("Sport. Quale disciplina?");
+  spawnBubbles([
+    {emo:'🏃',label:'Running',act:()=>pickGarment('running')},
+    {emo:'🏋️',label:'Training',act:()=>pickGarment('training')},
+    {emo:'🏀',label:'Basket',act:()=>pickGarment('basket')},
+    {emo:'⚽',label:'Calcio',act:()=>pickGarment('football')},
+    {emo:'🎾',label:'Tennis',act:()=>pickGarment('tennis')},
+    {emo:'⛳',label:'Golf',act:()=>pickGarment('golf')},
+    {emo:'↩︎',label:'Indietro',act:()=>catShoes()},
+  ]);
+}
+async function catShoesLife(){
+  clearBubbles();
+  await aiSpeak("Lifestyle. Che stile?");
+  spawnBubbles([
+    {emo:'👟',label:'Sneaker',act:()=>pickGarment('sneaker')},
+    {emo:'🛹',label:'Skate',act:()=>pickGarment('skate')},
+    {emo:'🩴',label:'Slide',act:()=>pickGarment('slide')},
+    {emo:'↩︎',label:'Indietro',act:()=>catShoes()},
+  ]);
+}
+async function catTops(){
+  clearBubbles();
+  await aiSpeak("Top. Maglie o capi pesanti?");
+  spawnBubbles([
+    {emo:'👕',label:'Maglie',act:()=>catTopsLight()},
+    {emo:'🧥',label:'Felpe & Giacche',act:()=>catTopsHeavy()},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function catTopsLight(){
+  clearBubbles();
+  await aiSpeak("Maglie. Quale preferisci?");
+  spawnBubbles([
+    {emo:'👕',label:'T-shirt',act:()=>pickGarment('tee')},
+    {emo:'🎽',label:'Polo',act:()=>pickGarment('polo')},
+    {emo:'🦺',label:'Canotta',act:()=>pickGarment('tank')},
+    {emo:'🥅',label:'Jersey',act:()=>pickGarment('jersey')},
+    {emo:'🧊',label:'Baselayer',act:()=>pickGarment('baselayer')},
+    {emo:'↩︎',label:'Indietro',act:()=>catTops()},
+  ]);
+}
+async function catTopsHeavy(){
+  clearBubbles();
+  await aiSpeak("Felpe e giacche. Cosa ti serve?");
+  spawnBubbles([
+    {emo:'🧥',label:'Felpa',act:()=>pickGarment('hoodie')},
+    {emo:'🧷',label:'Giacca',act:()=>pickGarment('jacket')},
+    {emo:'↩︎',label:'Indietro',act:()=>catTops()},
+  ]);
+}
+async function catBottoms(){
+  clearBubbles();
+  await aiSpeak("Bottom. Cosa ti serve?");
+  spawnBubbles([
+    {emo:'👖',label:'Pantaloni',act:()=>pickGarment('pants')},
+    {emo:'🧵',label:'Jogger',act:()=>pickGarment('jogger')},
+    {emo:'🩳',label:'Shorts',act:()=>pickGarment('shorts')},
+    {emo:'🦵',label:'Tight',act:()=>pickGarment('tight')},
+    {emo:'🧰',label:'Cargo',act:()=>pickGarment('cargo')},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function catSets(){
+  clearBubbles();
+  await aiSpeak("Tute e set. Quale tipo?");
+  spawnBubbles([
+    {emo:'🥋',label:'Tuta',act:()=>pickGarment('tracksuit')},
+    {emo:'🤸',label:'Set training',act:()=>pickGarment('trainingset')},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function catAcc(){
+  clearBubbles();
+  await aiSpeak("Accessori. Cosa cerchi?");
+  spawnBubbles([
+    {emo:'🎒',label:'Zaini',act:()=>pickGarment('backpack')},
+    {emo:'👜',label:'Borse',act:()=>pickGarment('bag')},
+    {emo:'🧢',label:'Cappelli',act:()=>pickGarment('cap')},
+    {emo:'🧦',label:'Calze',act:()=>pickGarment('socks')},
+    {emo:'🧤',label:'Guanti',act:()=>pickGarment('gloves')},
+    {emo:'🕶️',label:'Occhiali',act:()=>pickGarment('sunglasses')},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function catEquip(){
+  clearBubbles();
+  await aiSpeak("Attrezzatura. Cosa ti serve?");
+  spawnBubbles([
+    {emo:'⚽',label:'Palloni',act:()=>pickGarment('ball')},
+    {emo:'🧴',label:'Borracce',act:()=>pickGarment('bottle')},
+    {emo:'↩︎',label:'Indietro',act:()=>startAI()},
+  ]);
+}
+async function pickGarment(key){
+  const meta=GARMENT_META[key];
+  S.intent.garment=meta.label;S.intent.key=key;clearBubbles();
+  await aiSpeak(`${meta.label}. Per che occasione?`);
+  spawnBubbles([
+    {emo:'🏃',label:'Sport',act:()=>pickOcc('performance')},
+    {emo:'🛋️',label:'Ogni giorno',act:()=>pickOcc('lifestyle')},
+    {emo:'🌃',label:'Serata',act:()=>pickOcc('statement')},
+  ]);
+}
+async function pickOcc(o){
+  S.intent.occasion=o;clearBubbles();
+  await aiSpeak("Che vibe ti rappresenta? Scegline quante vuoi.");
+  showVibeBubbles();
+}
+function showVibeBubbles(){
+  spawnBubbles([
+    {emo:'⚫',label:'Minimal',act:()=>pickVibe('minimal')},
+    {emo:'⚡',label:'Bold volt',act:()=>pickVibe('bold')},
+    {emo:'🌫️',label:'Tech',act:()=>pickVibe('tech')},
+    {emo:'📼',label:'Retro',act:()=>pickVibe('retro')},
+    {emo:'🛹',label:'Street',act:()=>pickVibe('street')},
+    {emo:'🏔️',label:'Outdoor',act:()=>pickVibe('outdoor')},
+    {emo:'💎',label:'Premium',act:()=>pickVibe('premium')},
+    {emo:'✅',label:'Scannerizzami',act:()=>finishAI()},
+  ]);
+}
+async function pickVibe(v){
+  if(!S.intent.vibe.includes(v))S.intent.vibe.push(v);
+  clearBubbles();
+  await aiSpeak(`Aggiunto ${v}. Altro o passiamo allo scan?`);
+  showVibeBubbles();
+}
+async function finishAI(){
+  clearBubbles();
+  if(!S.intent.vibe.length)S.intent.vibe.push('minimal');
+  if(GARMENT_META[S.intent.key].sizeKey==='none'){
+    await aiSpeak(`Perfetto. Gli accessori sono a taglia unica, vado dritto allo stile.`);
+    spawnBubbles([{emo:'✨',label:'Vedi le proposte',act:()=>{go('s-style');buildStyle();}}]);
+    return;
+  }
+  await aiSpeak(`Perfetto. Faccio una scansione rapida per la taglia esatta di ${S.intent.garment}.`);
+  spawnBubbles([{emo:'📡',label:'Vai allo scan',act:()=>{go('s-scan');prepScan();}}]);
+}
+
+/* free text / voice parse */
+function _norm(s){return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+/* abbina la frase detta a una delle bolle attualmente mostrate e la attiva */
+function voicePickBubble(said){
+  const opts=window.__bubbleOpts; if(!opts||!opts.length) return false;
+  const s=_norm(said); if(!s) return false;
+  const words=s.split(' ').filter(w=>w.length>=2);
+  let best=null,score=0;
+  const consider=(o,sc)=>{ if(sc>score){score=sc;best=o;} };
+  for(const o of opts){
+    const l=_norm(o.label); if(!l) continue;
+    if(s===l) consider(o,100);
+    if(s.includes(l)||l.includes(s)) consider(o,l.length+5);
+    const lw=l.split(' ');
+    for(const a of words) for(const b of lw){
+      if(a===b) consider(o,b.length+3);
+      else if(b.length>=4 && (a.startsWith(b)||b.startsWith(a))) consider(o,b.length);
+      else if(a.length>=4 && b.includes(a)) consider(o,a.length);
+    }
+  }
+  if(score<3){ // sinonimi di intento
+    const intent=[[/(indietr|torn|back|annull)/,'indietro'],[/(scan|scann|avant|pront|fatt|vai|ok|proced|misur|taglia)/,'scann']];
+    for(const [re,key] of intent){ if(re.test(s)){ const o=opts.find(o=>_norm(o.label).includes(key)); if(o){best=o;score=10;break;} } }
+  }
+  if(best && score>=3){ best.act(); return true; }
+  return false;
+}
+function sendUser(txt){
+  txt=(txt||'').trim();if(!txt)return;
+  if(voicePickBubble(txt)) return;       // 1) seleziona l'opzione mostrata a schermo
+  const t=txt.toLowerCase();             // 2) altrimenti scorciatoie dirette
+  if(/run|corsa/.test(t))return pickGarment('running');
+  if(/sneak|scarp/.test(t))return pickGarment('sneaker');
+  if(/maglia|magliet|t-?shirt|tee/.test(t))return pickGarment('tee');
+  if(/felp|hood/.test(t))return pickGarment('hoodie');
+  if(/giacc|giubb|jacket/.test(t))return pickGarment('jacket');
+  if(/pantalon|jogger|tight/.test(t))return pickGarment('pants');
+  if(/short|pantalonc/.test(t))return pickGarment('shorts');
+  if(/complet|tuta|tracksuit/.test(t))return pickGarment('tracksuit');
+  if(/zaino|backpack/.test(t))return pickGarment('backpack');
+  if(/cappell|cap/.test(t))return pickGarment('cap');
+  if(/calz|socks/.test(t))return pickGarment('socks');
+  if(/basket|lebron|kobe/.test(t))return pickGarment('basket');
+  if(/calcio|football|mercurial|tiempo|phantom/.test(t))return pickGarment('football');
+  if(/tennis|vapor|court/.test(t))return pickGarment('tennis');
+  if(/skate|sb /.test(t))return pickGarment('skate');
+  if(/golf/.test(t))return pickGarment('golf');
+  if(/jersey|maglia gara|divisa/.test(t))return pickGarment('jersey');
+  if(/baselayer|compress|termic/.test(t))return pickGarment('baselayer');
+  if(/cargo/.test(t))return pickGarment('cargo');
+  if(/borsa|duffel|borsone/.test(t))return pickGarment('bag');
+  if(/guant/.test(t))return pickGarment('gloves');
+  if(/occhial|sunglass/.test(t))return pickGarment('sunglasses');
+  if(/pallone|ball/.test(t))return pickGarment('ball');
+  if(/borrac|bottle/.test(t))return pickGarment('bottle');
+  if(/tuta|tracksuit/.test(t))return pickGarment('tracksuit');
+  if(/polo/.test(t))return pickGarment('polo');
+  if(/scan|misur|taglia/.test(t)){go('s-scan');prepScan();return;}
+  aiSpeak("Posso aiutarti con scarpe, magliette, felpe o completi. Tocca una bolla.");
+}
+let recog=null,listening=false;
+const HINT_DEFAULT='Tocca il microfono o scegli una bolla';
+function setHint(t){const h=document.getElementById('voiceHint');if(h)h.textContent=t;}
+function toggleVoice(){
+  const mic=document.getElementById('mic');
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ // browser senza riconoscimento vocale -> demo
+    mic.classList.add('live');setHint('🎙️ Ascolto… (demo)');
+    setTimeout(()=>{mic.classList.remove('live');setHint(HINT_DEFAULT);sendUser('Cerco scarpe da running minimal');},1500);return;}
+  if(listening){recog.stop();return;}
+  recog=new SR();recog.lang='it-IT';recog.interimResults=true;recog.continuous=false;recog.maxAlternatives=1;
+  recog.onstart=()=>{listening=true;mic.classList.add('live');setHint('🎙️ Parla pure…');};
+  recog.onresult=e=>{
+    let txt='';for(let i=0;i<e.results.length;i++)txt+=e.results[i][0].transcript;
+    setHint('“'+txt.trim()+'”');
+    if(e.results[e.results.length-1].isFinal){
+      const said=txt.trim();recog.stop();
+      setTimeout(()=>{setHint(HINT_DEFAULT);if(said)sendUser(said);},650);
+    }
+  };
+  recog.onerror=ev=>{listening=false;mic.classList.remove('live');
+    setHint(ev.error==='not-allowed'||ev.error==='service-not-allowed'?'Consenti l’accesso al microfono':
+            ev.error==='no-speech'?'Non ho sentito, riprova':
+            ev.error==='network'?'Apri da http/https per il vocale':'Microfono non disponibile qui');
+    setTimeout(()=>setHint(HINT_DEFAULT),2400);};
+  recog.onend=()=>{listening=false;mic.classList.remove('live');};
+  try{recog.start();}catch(e){setHint('Riprova tra un attimo');}
+}
+
+/* ============================================================
+   SCAN
+   ============================================================ */
+function prepScan(){
+  const isShoe=GARMENT_META[S.intent.key].sizeKey==='shoe';
+  document.getElementById('scanTitle').textContent=isShoe?'Appoggia i piedi sui marker':'Mettiti nella sagoma';
+  document.getElementById('scanReadout').textContent='Sensori pronti.';
+  document.getElementById('measures').innerHTML='';
+  const btn=document.getElementById('scanBtn');
+  btn.style.display='block';btn.textContent='Avvia scansione';btn.onclick=runScan;
+}
+function runScan(){
+  const stage=document.getElementById('scanstage'),read=document.getElementById('scanReadout'),btn=document.getElementById('scanBtn');
+  btn.style.display='none';stage.classList.add('scanning');
+  const steps=['Calibrazione LIDAR…','Rilevo punti chiave…','Mappa 3D in corso…','Calcolo taglie…','Fatto ✓'];
+  let i=0;const iv=setInterval(()=>{read.textContent=steps[i++];
+    if(i>=steps.length){clearInterval(iv);revealMeasures();}},520);
+}
+function revealMeasures(){
+  document.getElementById('scanstage').classList.remove('scanning');
+  const isShoe=GARMENT_META[S.intent.key].sizeKey==='shoe';
+  const noSize=GARMENT_META[S.intent.key].sizeKey==='none';
+  const shoe=40+Math.floor(Math.random()*6);
+  const top=['XS','S','M','L','XL'][1+Math.floor(Math.random()*3)];
+  S.measures={shoe,top,height:172+Math.floor(Math.random()*18),chest:92+Math.floor(Math.random()*16)};
+  const items=isShoe
+    ?[['Taglia scarpa',shoe,'EU'],['Lunghezza piede',(24+Math.random()*3).toFixed(1),'cm'],['Larghezza','Regular',''],['Arco','Medio','']]
+    :[['Taglia',top,''],['Altezza',S.measures.height,'cm'],['Torace',S.measures.chest,'cm'],['Vestibilità','Regular','']];
+  const box=document.getElementById('measures');box.innerHTML='';
+  items.forEach((it,idx)=>{const d=document.createElement('div');d.className='measure glass reveal';
+    d.style.animationDelay=(idx*120)+'ms';
+    d.innerHTML=`<div class="k">${it[0]}</div><div class="v">${it[1]} <small>${it[2]}</small></div>`;box.appendChild(d);});
+  document.getElementById('scanReadout').textContent='Taglie acquisite. Costruisco lo stile…';
+  const next=document.createElement('button');next.className='btn primary full lg';next.style.marginTop='18px';
+  next.textContent='Vedi la mia direzione →';next.onclick=()=>{go('s-style');buildStyle();};
+  document.getElementById('scanBtn').replaceWith(next);
+}
+
+/* ============================================================
+   STYLE
+   ============================================================ */
+const CATALOG={
+  running:[
+    {n:'Pegasus 41',v:'Daily trainer · Air Zoom',p:139,vibe:['minimal'],floor:1,img:''},
+    {n:'Vaporfly 4',v:'Race day · carbonio',p:289,vibe:['premium'],floor:1,img:''},
+    {n:'Invincible 3',v:'Max cushion · ZoomX',p:189,vibe:['tech'],floor:1,img:''},
+    {n:'Structure 25',v:'Supporto · stabilità',p:149,vibe:['tech'],floor:1,img:''},
+    {n:'Pegasus Plus',v:'Reactive · ZoomX',p:179,vibe:['bold'],floor:1,img:''},
+    {n:'Zoom Fly 6',v:'Tempo · Flyplate',p:169,vibe:['tech'],floor:1,img:''},
+    {n:'Pegasus Trail 5',v:'Off-road · grip',p:149,vibe:['outdoor'],floor:1,img:''},
+    {n:'Streakfly 2',v:'Veloce · ultraleggera',p:169,vibe:['minimal'],floor:1,img:''},
+    {n:'InfinityRN 4',v:'Soft · ammortizzata',p:169,vibe:['minimal'],floor:1,img:''},
+    {n:'Revolution 7',v:'Entry · leggera',p:79,vibe:['minimal'],floor:1,img:''},
+  ],
+  sneaker:[
+    {n:'Air Force 1 \'07',v:'Icona · pelle bianca',p:125,vibe:['retro','street'],floor:1,img:''},
+    {n:'Dunk Low Retro',v:'Court classic',p:120,vibe:['retro','street'],floor:1,img:''},
+    {n:'Air Max 90',v:'Retro · unità Air',p:150,vibe:['retro','bold'],floor:1,img:''},
+    {n:'Air Max 97',v:'Liquid · full Air',p:185,vibe:['retro','bold'],floor:1,img:''},
+    {n:'Air Max Plus',v:'Tn · gradient',p:190,vibe:['street','bold'],floor:1,img:''},
+    {n:'Air Max DN',v:'Dynamic Air',p:170,vibe:['bold'],floor:1,img:''},
+    {n:'Air Max 1',v:'L\'originale · \'87',p:160,vibe:['retro','bold'],floor:1,img:''},
+    {n:'P-6000',v:'Y2K runner mix',p:120,vibe:['retro'],floor:1,img:''},
+    {n:'Cortez',v:'Heritage · \'72',p:90,vibe:['retro'],floor:1,img:''},
+    {n:'Killshot 2',v:'Vintage court',p:100,vibe:['retro'],floor:1,img:''},
+    {n:'Air Max 95',v:'OG · a strati',p:195,vibe:['retro','bold'],floor:1,img:''},
+    {n:'V2K Run',v:'Tech runner Y2K',p:120,vibe:['retro'],floor:1,img:''},
+  ],
+  basket:[
+    {n:'LeBron 22',v:'Esplosività · Air',p:200,vibe:['bold'],floor:1,img:''},
+    {n:'KD 17',v:'Veloce · reattiva',p:160,vibe:['minimal'],floor:1,img:''},
+    {n:'Kobe 6 Protro',v:'Mamba · low',p:190,vibe:['minimal'],floor:1,img:''},
+    {n:'G.T. Cut 3',v:'Court speed',p:190,vibe:['premium'],floor:1,img:''},
+    {n:'Giannis Immortality 4',v:'Two-way · agile',p:80,vibe:['minimal'],floor:1,img:''},
+    {n:'Ja 2',v:'Quick · low',p:110,vibe:['bold'],floor:1,img:''},
+    {n:'Sabrina 2',v:'Precisione · guard',p:140,vibe:['minimal'],floor:1,img:''},
+    {n:'G.T. Jump 2',v:'Verticalità · Air',p:180,vibe:['premium'],floor:1,img:''},
+  ],
+  training:[
+    {n:'Metcon 9',v:'Cross-training · stabile',p:150,vibe:['tech'],floor:1,img:''},
+    {n:'Free Metcon 6',v:'Versatile · flessibile',p:130,vibe:['tech','minimal'],floor:1,img:''},
+    {n:'Air Zoom SuperRep 4',v:'HIIT · reattiva',p:120,vibe:['tech'],floor:1,img:''},
+    {n:'MC Trainer 3',v:'Multi · presa',p:90,vibe:['minimal'],floor:1,img:''},
+    {n:'Air Max Alpha 6',v:'Pesi · supporto',p:100,vibe:['bold'],floor:1,img:''},
+    {n:'Legend Essential 3',v:'Entry trainer',p:70,vibe:['minimal'],floor:1,img:''},
+  ],
+  slide:[
+    {n:'Calm Slide',v:'Comfort · soft',p:55,vibe:['minimal'],floor:1,img:''},
+    {n:'Victori One',v:'Iconica · imbottita',p:30,vibe:['minimal'],floor:1,img:''},
+    {n:'Offcourt Slide',v:'Daily · strap',p:40,vibe:['tech'],floor:1,img:''},
+    {n:'Asuna 2',v:'Estiva · traspirante',p:55,vibe:['minimal'],floor:1,img:''},
+    {n:'Air Max Cirro',v:'Air · slide',p:70,vibe:['bold'],floor:1,img:''},
+    {n:'Solay Sandal',v:'Sandalo · leggero',p:35,vibe:['minimal'],floor:1,img:''},
+  ],
+  football:[
+    {n:'Mercurial Superfly 10',v:'Velocità · FG elite',p:260,vibe:['tech'],floor:1,img:''},
+    {n:'Phantom GX 2',v:'Precisione · controllo',p:230,vibe:['tech'],floor:1,img:''},
+    {n:'Tiempo Legend 10',v:'Tocco · pelle',p:230,vibe:['retro','minimal'],floor:1,img:''},
+    {n:'Mercurial Vapor 16',v:'Scatto · leggera',p:170,vibe:['premium','tech'],floor:1,img:''},
+    {n:'Phantom Luna 2',v:'Curve · grip',p:250,vibe:['tech'],floor:1,img:''},
+    {n:'Streetgato',v:'Indoor · street',p:80,vibe:['minimal'],floor:1,img:''},
+    {n:'Tiempo Emerald',v:'Classica · FG',p:150,vibe:['retro'],floor:1,img:''},
+  ],
+  skate:[
+    {n:'SB Dunk Low Pro',v:'Icona skate · grip',p:110,vibe:['street'],floor:1,img:''},
+    {n:'SB Zoom Blazer Mid',v:'Cushion · alla caviglia',p:100,vibe:['street','tech'],floor:1,img:''},
+    {n:'Nyjah Free 2',v:'Pro model · flex',p:100,vibe:['minimal'],floor:1,img:''},
+    {n:'SB Force 58',v:'Vulcanizzata · economica',p:70,vibe:['street'],floor:1,img:''},
+    {n:'SB Chron 2',v:'Daily skate · leggera',p:75,vibe:['street'],floor:1,img:''},
+    {n:'SB Ishod',v:'Signature · board feel',p:110,vibe:['street'],floor:1,img:''},
+  ],
+  tennis:[
+    {n:'Court Air Zoom Vapor 11',v:'Velocità · campo',p:150,vibe:['premium','tech'],floor:1,img:''},
+    {n:'Air Zoom GP Turbo',v:'Reattiva · tutte le superfici',p:140,vibe:['tech'],floor:1,img:''},
+    {n:'Vapor Pro 2',v:'Stabilità · agonismo',p:130,vibe:['premium','tech'],floor:1,img:''},
+    {n:'Court Legacy',v:'Lifestyle · retro',p:75,vibe:['tech'],floor:1,img:''},
+    {n:'Zoom Vapor Cage 4',v:'Durata · terra',p:140,vibe:['premium','tech'],floor:1,img:''},
+    {n:'GP Challenge Pro',v:'All-court · grip',p:130,vibe:['minimal'],floor:1,img:''},
+  ],
+  golf:[
+    {n:'Air Zoom Victory Tour 3',v:'Tour · stabilità',p:210,vibe:['premium','tech'],floor:1,img:''},
+    {n:'Infinity Tour 2',v:'Comfort · 18 buche',p:180,vibe:['premium'],floor:1,img:''},
+    {n:'Air Zoom Infinity NEXT%',v:'Reattiva · spikeless',p:160,vibe:['tech'],floor:1,img:''},
+    {n:'Roshe G',v:'Leggera · casual',p:100,vibe:['minimal'],floor:1,img:''},
+    {n:'Victory G Lite',v:'Entry · spikeless',p:80,vibe:['minimal'],floor:1,img:''},
+  ],
+  tee:[
+    {n:'Sportswear Club Tee',v:'Cotone premium',p:30,vibe:['minimal'],floor:2,img:''},
+    {n:'Dri-FIT Legend',v:'Tecnico · relaxed',p:30,vibe:['tech','minimal'],floor:2,img:''},
+    {n:'Dri-FIT UV Miler',v:'Running · laser',p:40,vibe:['tech'],floor:2,img:''},
+    {n:'Tech Pack Tee',v:'Utility · riflettente',p:60,vibe:['minimal'],floor:2,img:''},
+    {n:'Solo Swoosh Heavy',v:'French terry · pesante',p:45,vibe:['street'],floor:2,img:''},
+    {n:'ACG \'Lungs\'',v:'Outdoor · grafica',p:45,vibe:['outdoor'],floor:2,img:''},
+    {n:'Max90 Graphic',v:'Oversize · bold',p:40,vibe:['street','bold'],floor:2,img:''},
+    {n:'Sportswear Swoosh',v:'Logo · classica',p:35,vibe:['minimal'],floor:2,img:''},
+    {n:'Essential Mono',v:'Pulita · essenziale',p:28,vibe:['minimal'],floor:2,img:''},
+  ],
+  polo:[
+    {n:'Dri-FIT Victory',v:'Tecnica · slim',p:55,vibe:['tech'],floor:2,img:''},
+    {n:'Club Polo',v:'Piqué · classica',p:55,vibe:['minimal'],floor:2,img:''},
+    {n:'Dri-FIT Tour',v:'Golf · stretch',p:70,vibe:['premium','tech'],floor:2,img:''},
+    {n:'Court Heritage',v:'Tennis · retro',p:65,vibe:['retro','tech'],floor:2,img:''},
+    {n:'The Nike Polo Slim',v:'Iconica · aderente',p:75,vibe:['premium'],floor:2,img:''},
+  ],
+  tank:[
+    {n:'Pro Dri-FIT Tank',v:'Compressione · base',p:30,vibe:['tech'],floor:2,img:''},
+    {n:'Sportswear Tank',v:'Cotone · relaxed',p:25,vibe:['minimal'],floor:2,img:''},
+    {n:'Solo Swoosh Tank',v:'Heavy · logo',p:40,vibe:['street'],floor:2,img:''},
+    {n:'Hyverse Tank',v:'Versatile · UV',p:35,vibe:['minimal'],floor:2,img:''},
+  ],
+  jersey:[
+    {n:'Dri-FIT ADV Match',v:'Jersey gara · elite',p:150,vibe:['tech'],floor:2,img:''},
+    {n:'Strike Jersey',v:'Allenamento · tecnica',p:60,vibe:['bold'],floor:2,img:''},
+    {n:'Academy Jersey',v:'Team · traspirante',p:40,vibe:['minimal'],floor:2,img:''},
+    {n:'F.C. Home Jersey',v:'Street football',p:75,vibe:['minimal'],floor:2,img:''},
+    {n:'Dri-FIT Stadium',v:'Replica · tifo',p:90,vibe:['tech'],floor:2,img:''},
+    {n:'Therma Repel Strike',v:'Caldo · pre-gara',p:70,vibe:['outdoor','bold'],floor:2,img:''},
+  ],
+  baselayer:[
+    {n:'Pro Dri-FIT Long Sleeve',v:'Compressione · base',p:40,vibe:['tech'],floor:2,img:''},
+    {n:'Pro Warm Mock',v:'Caldo · collo alto',p:45,vibe:['tech'],floor:2,img:''},
+    {n:'Pro Compression LS',v:'Layer · seconda pelle',p:50,vibe:['tech'],floor:2,img:''},
+    {n:'Pro Hyperwarm',v:'Inverno · termico',p:55,vibe:['tech'],floor:2,img:''},
+    {n:'Dri-FIT ADV Axis Baselayer',v:'Seamless · avanzato',p:70,vibe:['tech'],floor:2,img:''},
+  ],
+  hoodie:[
+    {n:'Tech Fleece Windrunner',v:'Premium · zip',p:130,vibe:['premium','retro'],floor:3,img:''},
+    {n:'Club Fleece Pullover',v:'Garzato · essenziale',p:65,vibe:['minimal'],floor:3,img:''},
+    {n:'Sportswear Tech \'Onyx\'',v:'Smooth · pregiata',p:125,vibe:['minimal'],floor:3,img:''},
+    {n:'Solo Swoosh Hoodie',v:'Heavy · ricamo',p:100,vibe:['street'],floor:3,img:''},
+    {n:'ACG Therma-FIT',v:'Outdoor · caldo',p:150,vibe:['outdoor','tech'],floor:3,img:''},
+    {n:'Standard Issue',v:'Pile · pesante',p:110,vibe:['premium'],floor:3,img:''},
+    {n:'Running Division',v:'Tech · riflettente',p:120,vibe:['minimal'],floor:3,img:''},
+    {n:'Club Full-Zip',v:'Classica · zip',p:75,vibe:['minimal'],floor:3,img:''},
+  ],
+  jacket:[
+    {n:'Windrunner',v:'Iconica · color block',p:120,vibe:['retro'],floor:3,img:''},
+    {n:'Sportswear Bomber',v:'Imbottito · satin',p:160,vibe:['street'],floor:3,img:''},
+    {n:'Storm-FIT ADV \'Shell\'',v:'Guscio · 3 strati',p:260,vibe:['outdoor','tech'],floor:3,img:''},
+    {n:'Therma-FIT Repel',v:'Caldo · impermeabile',p:150,vibe:['outdoor','tech'],floor:3,img:''},
+    {n:'ACG \'Chain of Craters\'',v:'Outdoor · tecnica',p:200,vibe:['outdoor'],floor:3,img:''},
+    {n:'Tech Woven',v:'Utility · leggera',p:130,vibe:['minimal'],floor:3,img:''},
+    {n:'Club Coaches',v:'Casual · classica',p:90,vibe:['minimal'],floor:3,img:''},
+  ],
+  pants:[
+    {n:'Tech Fleece Jogger',v:'Affusolato · zip',p:119,vibe:['premium'],floor:3,img:''},
+    {n:'Club Fleece Pant',v:'Comodo · daily',p:65,vibe:['minimal'],floor:3,img:''},
+    {n:'Dri-FIT Pant',v:'Training · stretch',p:70,vibe:['tech'],floor:3,img:''},
+    {n:'Tech Woven',v:'Leggero · tecnico',p:110,vibe:['minimal'],floor:3,img:''},
+    {n:'Standard Issue',v:'Pile · relaxed',p:100,vibe:['premium'],floor:3,img:''},
+    {n:'Phenom Pant',v:'Run · knit',p:90,vibe:['minimal'],floor:3,img:''},
+  ],
+  jogger:[
+    {n:'Tech Fleece Jogger',v:'Premium · slim',p:119,vibe:['premium'],floor:3,img:''},
+    {n:'Club Jogger',v:'Garzato · essenziale',p:60,vibe:['minimal'],floor:3,img:''},
+    {n:'Standard Issue',v:'Dri-FIT · relaxed',p:90,vibe:['premium'],floor:3,img:''},
+    {n:'Solo Swoosh Jogger',v:'Heavy · ricamo',p:110,vibe:['street'],floor:3,img:''},
+    {n:'Air Jogger',v:'Retro · tape',p:90,vibe:['minimal'],floor:3,img:''},
+  ],
+  shorts:[
+    {n:'Flex Stride 5"',v:'Running · liner',p:45,vibe:['minimal'],floor:2,img:''},
+    {n:'Dri-FIT Challenger 7"',v:'Versatile · asciutto',p:40,vibe:['tech'],floor:2,img:''},
+    {n:'Club Short',v:'French terry · daily',p:45,vibe:['minimal'],floor:2,img:''},
+    {n:'Pro 3"',v:'Compressione · base',p:30,vibe:['tech'],floor:2,img:''},
+    {n:'Unlimited 9"',v:'2-in-1 · versatile',p:55,vibe:['minimal'],floor:2,img:''},
+    {n:'Starting 5 8"',v:'Basket · mesh',p:50,vibe:['minimal'],floor:2,img:''},
+  ],
+  tight:[
+    {n:'Pro Dri-FIT Tight',v:'Compressione · base',p:40,vibe:['tech'],floor:2,img:''},
+    {n:'Dri-FIT ADV Axis',v:'Tecnica · seamless',p:65,vibe:['tech'],floor:2,img:''},
+    {n:'Running Tight',v:'Termica · tasche',p:60,vibe:['minimal'],floor:2,img:''},
+    {n:'Universa',v:'Supporto medio · daily',p:75,vibe:['minimal'],floor:2,img:''},
+  ],
+  cargo:[
+    {n:'Sportswear Cargo Pant',v:'Tasche · utility',p:120,vibe:['street'],floor:3,img:''},
+    {n:'Tech Woven Cargo',v:'Leggero · tecnico',p:130,vibe:['street'],floor:3,img:''},
+    {n:'ACG Smith Summit Cargo',v:'Trekking · resistente',p:170,vibe:['outdoor','street'],floor:3,img:''},
+    {n:'Club Cargo',v:'Casual · daily',p:75,vibe:['street','minimal'],floor:3,img:''},
+    {n:'Pro Cargo Short',v:'Training · stretch',p:60,vibe:['street','tech'],floor:3,img:''},
+  ],
+  tracksuit:[
+    {n:'Academy Dri-FIT',v:'Calcio · tuta completa',p:90,vibe:['tech','minimal'],floor:3,img:''},
+    {n:'Sportswear Woven',v:'Lifestyle · leggera',p:130,vibe:['minimal'],floor:3,img:''},
+    {n:'Tech Fleece Set',v:'Premium · coordinato',p:240,vibe:['premium'],floor:3,img:''},
+    {n:'Club Set',v:'Essenziale · daily',p:120,vibe:['minimal'],floor:3,img:''},
+    {n:'Windrunner Set',v:'Iconico · retro',p:170,vibe:['retro'],floor:3,img:''},
+  ],
+  trainingset:[
+    {n:'Dri-FIT Training Set',v:'Palestra · asciutto',p:110,vibe:['tech'],floor:3,img:''},
+    {n:'Pro Set \'Volt\'',v:'Compressione · bold',p:109,vibe:['tech','bold'],floor:3,img:''},
+    {n:'Tech Pack Set',v:'Modulare · cargo',p:159,vibe:['minimal'],floor:3,img:''},
+    {n:'Strike Set',v:'Calcio · tecnica',p:100,vibe:['bold'],floor:3,img:''},
+  ],
+  backpack:[
+    {n:'Brasilia 9.5',v:'24L · resistente',p:45,vibe:['minimal'],floor:1,img:''},
+    {n:'Elemental',v:'21L · daily',p:42,vibe:['minimal'],floor:1,img:''},
+    {n:'Heritage Backpack',v:'25L · classico',p:55,vibe:['retro'],floor:1,img:''},
+    {n:'Sportswear RPM',v:'Tech · organizzato',p:100,vibe:['minimal'],floor:1,img:''},
+    {n:'Utility Speed',v:'27L · training',p:85,vibe:['minimal'],floor:1,img:''},
+    {n:'Hike 24L',v:'Outdoor · ACG',p:130,vibe:['outdoor'],floor:1,img:''},
+  ],
+  cap:[
+    {n:'Club Unstructured',v:'Soft · regolabile',p:25,vibe:['tech','minimal'],floor:1,img:''},
+    {n:'Dri-FIT AeroBill',v:'Run · traspirante',p:30,vibe:['premium','tech'],floor:1,img:''},
+    {n:'Heritage86',v:'Iconico · cotone',p:26,vibe:['retro'],floor:1,img:''},
+    {n:'Apex Structured',v:'Strutturato · premium',p:35,vibe:['tech'],floor:1,img:''},
+    {n:'Dri-FIT Rise',v:'Performance · UV',p:32,vibe:['tech'],floor:1,img:''},
+    {n:'Beanie Mono',v:'Maglia · caldo',p:25,vibe:['minimal'],floor:1,img:''},
+  ],
+  socks:[
+    {n:'Everyday Cushioned x3',v:'Ammortizzate · crew',p:22,vibe:['minimal'],floor:1,img:''},
+    {n:'Everyday Plus x6',v:'Multipack · daily',p:28,vibe:['bold','minimal'],floor:1,img:''},
+    {n:'Multiplier x2',v:'Sottili · run',p:18,vibe:['minimal'],floor:1,img:''},
+    {n:'Elite Crew',v:'Basket · cushion',p:18,vibe:['premium'],floor:1,img:''},
+  ],
+  bag:[
+    {n:'Brasilia Duffel M',v:'Borsone · 60L',p:55,vibe:['minimal'],floor:1,img:''},
+    {n:'Gym Club Duffel',v:'Palestra · 24L',p:45,vibe:['minimal'],floor:1,img:''},
+    {n:'Heritage Hip Pack',v:'Marsupio · daily',p:30,vibe:['retro'],floor:1,img:''},
+    {n:'Elemental Crossbody',v:'Tracolla · utility',p:38,vibe:['street'],floor:1,img:''},
+    {n:'Premier Tote',v:'Shopper · premium',p:60,vibe:['minimal'],floor:1,img:''},
+    {n:'Shoe Box Bag',v:'Porta-sneaker',p:40,vibe:['minimal'],floor:1,img:''},
+  ],
+  gloves:[
+    {n:'Therma-FIT Gloves',v:'Caldo · touch',p:35,vibe:['outdoor','tech'],floor:1,img:''},
+    {n:'Lightweight Tech Run',v:'Leggeri · run',p:30,vibe:['minimal'],floor:1,img:''},
+    {n:'Sphere Running 2.0',v:'Termici · riflettenti',p:40,vibe:['minimal'],floor:1,img:''},
+    {n:'Goalkeeper Match',v:'Portiere · presa',p:45,vibe:['minimal'],floor:1,img:''},
+    {n:'Hyperwarm Academy',v:'Inverno · calcio',p:28,vibe:['minimal'],floor:1,img:''},
+  ],
+  sunglasses:[
+    {n:'Maverick',v:'Sport · avvolgenti',p:110,vibe:['minimal'],floor:1,img:''},
+    {n:'Skylon Ace',v:'Leggeri · versatili',p:75,vibe:['minimal'],floor:1,img:''},
+    {n:'Show X3',v:'Schermo unico · run',p:150,vibe:['minimal'],floor:1,img:''},
+    {n:'Windtrack',v:'Trail · ventilati',p:160,vibe:['minimal'],floor:1,img:''},
+    {n:'Flyfree',v:'Daily · lifestyle',p:90,vibe:['minimal'],floor:1,img:''},
+    {n:'Aerial',v:'Compatti · corsa',p:95,vibe:['minimal'],floor:1,img:''},
+  ],
+  ball:[
+    {n:'Academy Football',v:'Pallone calcio · training',p:30,vibe:['minimal'],floor:1,img:''},
+    {n:'Strike Football',v:'Match · grafica',p:45,vibe:['bold'],floor:1,img:''},
+    {n:'Flight Match',v:'Top · FIFA quality',p:160,vibe:['bold'],floor:1,img:''},
+    {n:'Everyday Playground',v:'Basket · outdoor',p:30,vibe:['minimal'],floor:1,img:''},
+    {n:'Elite Basketball',v:'Indoor · pro',p:95,vibe:['premium'],floor:1,img:''},
+    {n:'Hyperspike Volley',v:'Pallavolo · match',p:70,vibe:['minimal'],floor:1,img:''},
+  ],
+  bottle:[
+    {n:'Big Mouth 2.0 32oz',v:'Borraccia · 950ml',p:18,vibe:['minimal'],floor:1,img:''},
+    {n:'Hypercharge Straw 24oz',v:'Cannuccia · 710ml',p:20,vibe:['minimal'],floor:1,img:''},
+    {n:'Recharge 24oz',v:'Sport · 710ml',p:16,vibe:['minimal'],floor:1,img:''},
+    {n:'TR Hypercharge 32oz',v:'Training · 950ml',p:22,vibe:['minimal'],floor:1,img:''},
+  ],
+};
+const GARMENT_META={
+  running:{label:'Scarpe running',emo:'👟',sizeKey:'shoe'},
+  sneaker:{label:'Sneaker lifestyle',emo:'👟',sizeKey:'shoe'},
+  basket:{label:'Scarpe basket',emo:'🏀',sizeKey:'shoe'},
+  training:{label:'Scarpe training',emo:'🏋️',sizeKey:'shoe'},
+  slide:{label:'Slide & sandali',emo:'🩴',sizeKey:'shoe'},
+  football:{label:'Scarpe calcio',emo:'⚽',sizeKey:'shoe'},
+  skate:{label:'Skateboarding',emo:'🛹',sizeKey:'shoe'},
+  tennis:{label:'Scarpe tennis',emo:'🎾',sizeKey:'shoe'},
+  golf:{label:'Scarpe golf',emo:'⛳',sizeKey:'shoe'},
+  tee:{label:'T-shirt',emo:'👕',sizeKey:'top'},
+  polo:{label:'Polo',emo:'👕',sizeKey:'top'},
+  tank:{label:'Canotte',emo:'🎽',sizeKey:'top'},
+  jersey:{label:'Maglie & Jersey',emo:'🥅',sizeKey:'top'},
+  baselayer:{label:'Baselayer & Pro',emo:'🧊',sizeKey:'top'},
+  hoodie:{label:'Felpe',emo:'🧥',sizeKey:'top'},
+  jacket:{label:'Giacche',emo:'🧥',sizeKey:'top'},
+  pants:{label:'Pantaloni',emo:'👖',sizeKey:'top'},
+  jogger:{label:'Jogger',emo:'👖',sizeKey:'top'},
+  shorts:{label:'Shorts',emo:'🩳',sizeKey:'top'},
+  tight:{label:'Tight',emo:'🦵',sizeKey:'top'},
+  cargo:{label:'Cargo',emo:'🧰',sizeKey:'top'},
+  tracksuit:{label:'Tuta completa',emo:'🥋',sizeKey:'top'},
+  trainingset:{label:'Set training',emo:'🤸',sizeKey:'top'},
+  backpack:{label:'Zaini',emo:'🎒',sizeKey:'none'},
+  cap:{label:'Cappelli',emo:'🧢',sizeKey:'none'},
+  socks:{label:'Calze',emo:'🧦',sizeKey:'none'},
+  bag:{label:'Borse & Duffel',emo:'👜',sizeKey:'none'},
+  gloves:{label:'Guanti',emo:'🧤',sizeKey:'none'},
+  sunglasses:{label:'Occhiali',emo:'🕶️',sizeKey:'none'},
+  ball:{label:'Palloni',emo:'⚽',sizeKey:'none'},
+  bottle:{label:'Borracce',emo:'🧴',sizeKey:'none'},
+};
+const SVGS={
+  running:'<svg viewBox="0 0 120 70"><path d="M8 50 C8 38 28 36 40 36 C56 36 68 24 86 24 C104 24 114 34 114 44 L114 50 C114 55 110 58 104 58 L16 58 C11 58 8 55 8 50Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M40 36 C44 30 52 28 60 30" fill="none" stroke="#d4ff37" stroke-width="2"/></svg>',
+  sneaker:'<svg viewBox="0 0 120 70"><path d="M10 52 C10 40 26 38 38 38 C54 38 64 30 82 30 C100 30 112 36 112 46 L112 52 C112 56 109 58 104 58 L16 58 C12 58 10 56 10 52Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M44 40 C50 34 60 33 70 36" fill="none" stroke="#d4ff37" stroke-width="2.4"/><path d="M16 58 L104 58" stroke="#7fdfff" stroke-width="2"/></svg>',
+  basket:'<svg viewBox="0 0 120 70"><path d="M10 52 C10 40 26 38 38 38 C54 38 64 30 82 30 C100 30 112 36 112 46 L112 52 C112 56 109 58 104 58 L16 58 C12 58 10 56 10 52Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M44 40 C50 34 60 33 70 36" fill="none" stroke="#d4ff37" stroke-width="2.4"/><path d="M16 58 L104 58" stroke="#7fdfff" stroke-width="2"/></svg>',
+  training:'<svg viewBox="0 0 120 70"><path d="M8 50 C8 38 28 36 40 36 C56 36 68 24 86 24 C104 24 114 34 114 44 L114 50 C114 55 110 58 104 58 L16 58 C11 58 8 55 8 50Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M40 36 C44 30 52 28 60 30" fill="none" stroke="#d4ff37" stroke-width="2"/></svg>',
+  slide:'<svg viewBox="0 0 120 70"><path d="M10 52 C10 40 26 38 38 38 C54 38 64 30 82 30 C100 30 112 36 112 46 L112 52 C112 56 109 58 104 58 L16 58 C12 58 10 56 10 52Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M44 40 C50 34 60 33 70 36" fill="none" stroke="#d4ff37" stroke-width="2.4"/><path d="M16 58 L104 58" stroke="#7fdfff" stroke-width="2"/></svg>',
+  football:'<svg viewBox="0 0 120 70"><path d="M10 52 C10 40 26 38 38 38 C54 38 64 30 82 30 C100 30 112 36 112 46 L112 52 C112 56 109 58 104 58 L16 58 C12 58 10 56 10 52Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M44 40 C50 34 60 33 70 36" fill="none" stroke="#d4ff37" stroke-width="2.4"/><path d="M16 58 L104 58" stroke="#7fdfff" stroke-width="2"/></svg>',
+  skate:'<svg viewBox="0 0 120 70"><path d="M10 52 C10 40 26 38 38 38 C54 38 64 30 82 30 C100 30 112 36 112 46 L112 52 C112 56 109 58 104 58 L16 58 C12 58 10 56 10 52Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M44 40 C50 34 60 33 70 36" fill="none" stroke="#d4ff37" stroke-width="2.4"/><path d="M16 58 L104 58" stroke="#7fdfff" stroke-width="2"/></svg>',
+  tennis:'<svg viewBox="0 0 120 70"><path d="M8 50 C8 38 28 36 40 36 C56 36 68 24 86 24 C104 24 114 34 114 44 L114 50 C114 55 110 58 104 58 L16 58 C11 58 8 55 8 50Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M40 36 C44 30 52 28 60 30" fill="none" stroke="#d4ff37" stroke-width="2"/></svg>',
+  golf:'<svg viewBox="0 0 120 70"><path d="M8 50 C8 38 28 36 40 36 C56 36 68 24 86 24 C104 24 114 34 114 44 L114 50 C114 55 110 58 104 58 L16 58 C11 58 8 55 8 50Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M40 36 C44 30 52 28 60 30" fill="none" stroke="#d4ff37" stroke-width="2"/></svg>',
+  tee:'<svg viewBox="0 0 120 90"><path d="M40 14 L30 24 L20 36 L30 44 L36 38 L36 78 L84 78 L84 38 L90 44 L100 36 L90 24 L80 14 C72 22 48 22 40 14Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 18 C56 24 64 24 68 18" fill="none" stroke="#d4ff37" stroke-width="1.6"/></svg>',
+  polo:'<svg viewBox="0 0 120 90"><path d="M40 14 L30 24 L20 36 L30 44 L36 38 L36 78 L84 78 L84 38 L90 44 L100 36 L90 24 L80 14 C72 22 48 22 40 14Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 18 C56 24 64 24 68 18" fill="none" stroke="#d4ff37" stroke-width="1.6"/></svg>',
+  tank:'<svg viewBox="0 0 120 90"><path d="M40 14 L30 24 L20 36 L30 44 L36 38 L36 78 L84 78 L84 38 L90 44 L100 36 L90 24 L80 14 C72 22 48 22 40 14Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 18 C56 24 64 24 68 18" fill="none" stroke="#d4ff37" stroke-width="1.6"/></svg>',
+  jersey:'<svg viewBox="0 0 120 90"><path d="M40 14 L30 24 L20 36 L30 44 L36 38 L36 78 L84 78 L84 38 L90 44 L100 36 L90 24 L80 14 C72 22 48 22 40 14Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 18 C56 24 64 24 68 18" fill="none" stroke="#d4ff37" stroke-width="1.6"/></svg>',
+  baselayer:'<svg viewBox="0 0 120 90"><path d="M40 14 L30 24 L20 36 L30 44 L36 38 L36 78 L84 78 L84 38 L90 44 L100 36 L90 24 L80 14 C72 22 48 22 40 14Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 18 C56 24 64 24 68 18" fill="none" stroke="#d4ff37" stroke-width="1.6"/></svg>',
+  hoodie:'<svg viewBox="0 0 120 90"><path d="M42 16 C46 26 74 26 78 16 L92 26 L100 40 L90 48 L86 44 L86 80 L34 80 L34 44 L30 48 L20 40 L28 26Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M58 60 L62 60" stroke="#d4ff37" stroke-width="3"/></svg>',
+  jacket:'<svg viewBox="0 0 120 90"><path d="M40 16 L30 26 L22 40 L32 48 L38 42 L38 80 L82 80 L82 42 L88 48 L98 40 L90 26 L80 16 C72 24 48 24 40 16Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M60 18 L60 80" stroke="#7fdfff" stroke-width="1.2"/><path d="M55 34 L55 36 M55 46 L55 48 M55 58 L55 60" stroke="#d4ff37" stroke-width="2.4"/></svg>',
+  pants:'<svg viewBox="0 0 120 90"><path d="M42 10 L78 10 L80 30 L74 84 L62 84 L60 40 L58 84 L46 84 L40 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M42 16 L78 16" stroke="#d4ff37" stroke-width="2"/></svg>',
+  jogger:'<svg viewBox="0 0 120 90"><path d="M42 10 L78 10 L80 30 L74 84 L62 84 L60 40 L58 84 L46 84 L40 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M42 16 L78 16" stroke="#d4ff37" stroke-width="2"/></svg>',
+  shorts:'<svg viewBox="0 0 120 90"><path d="M40 24 L80 24 L82 40 L74 70 L62 70 L60 46 L58 70 L46 70 L38 40Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M40 30 L80 30" stroke="#d4ff37" stroke-width="2"/></svg>',
+  tight:'<svg viewBox="0 0 120 90"><path d="M42 10 L78 10 L80 30 L74 84 L62 84 L60 40 L58 84 L46 84 L40 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M42 16 L78 16" stroke="#d4ff37" stroke-width="2"/></svg>',
+  cargo:'<svg viewBox="0 0 120 90"><path d="M42 10 L78 10 L80 30 L74 84 L62 84 L60 40 L58 84 L46 84 L40 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M42 16 L78 16" stroke="#d4ff37" stroke-width="2"/></svg>',
+  tracksuit:'<svg viewBox="0 0 120 90"><path d="M44 12 L34 22 L26 32 L34 40 L40 35 L40 50 L80 50 L80 35 L86 40 L94 32 L86 22 L76 12 C68 20 52 20 44 12Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.1"/><path d="M44 54 L76 54 L72 82 L62 82 L60 64 L58 82 L48 82Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.1"/></svg>',
+  trainingset:'<svg viewBox="0 0 120 90"><path d="M44 12 L34 22 L26 32 L34 40 L40 35 L40 50 L80 50 L80 35 L86 40 L94 32 L86 22 L76 12 C68 20 52 20 44 12Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.1"/><path d="M44 54 L76 54 L72 82 L62 82 L60 64 L58 82 L48 82Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.1"/></svg>',
+  backpack:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  cap:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  socks:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  bag:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  gloves:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  sunglasses:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  ball:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+  bottle:'<svg viewBox="0 0 120 90"><path d="M44 20 C44 12 76 12 76 20 L82 30 L84 76 L36 76 L38 30Z" fill="#11161f" stroke="#7fdfff" stroke-width="1.2"/><path d="M50 20 C50 14 70 14 70 20" fill="none" stroke="#7fdfff" stroke-width="1.2"/><path d="M52 44 L68 44" stroke="#d4ff37" stroke-width="3"/></svg>',
+};
+function buildStyle(){
+  const k=S.intent.key,vibes=S.intent.vibe;
+  const vibeName={minimal:'Minimal Mono',bold:'Bold Volt',tech:'Tech Utility',retro:'Retro Heritage',street:'Streetwear',outdoor:'ACG Outdoor',premium:'Premium'};
+  document.getElementById('styleLead').innerHTML=
+    `In base a <b>${S.intent.occasion||'lifestyle'}</b> e taglia <b>${sizeLabel()}</b>, ecco i pezzi che vestono meglio la tua silhouette.`;
+  const tagBox=document.getElementById('styleTags');tagBox.innerHTML='';
+  vibes.forEach(v=>{const t=document.createElement('div');t.className='style-tag';t.textContent=vibeName[v];tagBox.appendChild(t);});
+  let items=CATALOG[k].slice().sort((a,b)=>
+    (a.vibe.some(x=>vibes.includes(x))?0:1)-(b.vibe.some(x=>vibes.includes(x))?0:1));
+  const grid=document.getElementById('styleGrid');grid.innerHTML='';
+  items.forEach((it,i)=>{
+    const match=it.vibe.some(x=>vibes.includes(x));
+    const el=document.createElement('div');el.className='product glass';
+    el.style.animation='rise .5s var(--ease) both';el.style.animationDelay=(i*90)+'ms';
+    el.innerHTML=`${match?'<div class="fit">MATCH</div>':''}<div class="pic">${it.img?`<img src="${it.img}" alt="${it.n}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=SVGS['${k}']">`:SVGS[k]}</div>
+      <div class="name">${it.n}</div><div class="meta">${it.v}</div><div class="price">€${it.p}</div>`;
+    el.onclick=()=>{document.querySelectorAll('.product').forEach(p=>p.classList.remove('sel'));
+      el.classList.add('sel');S.selected=it;document.getElementById('styleNext').disabled=false;};
+    grid.appendChild(el);
+  });
+}
+
+/* ============================================================
+   LOCATE
+   ============================================================ */
+const FLOORS=[
+  {n:1,t:'Footwear · Running Lab',d:'Scarpe performance · prova tapis'},
+  {n:2,t:'Training · Apparel',d:'T-shirt, completi, essential'},
+  {n:3,t:'Tech Pack · Outerwear',d:'Felpe, giacche, limited'},
+];
+function buildLocate(){
+  const it=S.selected;
+  S.pickupCode='NK-'+(1000+Math.floor(Math.random()*8999));
+  document.getElementById('pickupCode').textContent=S.pickupCode;
+  document.getElementById('locateLead').innerHTML=
+    `Il tuo <b>${it.n}</b> in taglia <b>${sizeLabel()}</b> è pronto. Segui le indicazioni.`;
+  const map=document.getElementById('floormap');map.innerHTML='';
+  FLOORS.forEach(f=>{const el=document.createElement('div');el.className='floor glass'+(f.n===it.floor?' target':'');
+    el.innerHTML=`<div class="num">P${f.n}</div><div class="info"><div class="t">${f.t}</div><div class="d">${f.d}</div></div>
+      <div class="pin">◎ QUI · corsia ${2+Math.floor(Math.random()*8)}</div>`;map.appendChild(el);});
+}
+function resetAll(){
+  S.intent={garment:null,key:null,vibe:[],occasion:null};S.measures={};S.selected=null;
+  go('s-attract');document.getElementById('progress').style.display='none';
+}
+
+/* ============================================================
+   OLYMPIC PROGRAM — all sports, grouped, with mini-games
+   Each sport maps to one of 5 engines: timing | rhythm | aim | mash | balance
+   ============================================================ */
+const SPORTS=[
+  // ATLETICA
+  {id:'sprint',cat:'Atletica',ico:'🏃',t:'100m Sprint',d:'Premi a ritmo per accelerare',engine:'mash'},
+  {id:'hurdles',cat:'Atletica',ico:'🚧',t:'Ostacoli',d:'Salta a tempo',engine:'timing'},
+  {id:'longjump',cat:'Atletica',ico:'➡️',t:'Salto in lungo',d:'Stacca nel momento giusto',engine:'timing'},
+  {id:'javelin',cat:'Atletica',ico:'🎯',t:'Giavellotto',d:'Carica e lancia',engine:'aim'},
+  {id:'marathon',cat:'Atletica',ico:'🏅',t:'Maratona',d:'Mantieni il passo',engine:'rhythm'},
+  // ACQUATICI
+  {id:'swim',cat:'Acquatici',ico:'🏊',t:'Nuoto 50m',d:'Bracciate a tempo',engine:'rhythm'},
+  {id:'dive',cat:'Acquatici',ico:'🤿',t:'Tuffi',d:'Tempismo perfetto',engine:'timing'},
+  {id:'waterpolo',cat:'Acquatici',ico:'🤽',t:'Pallanuoto',d:'Tira in porta',engine:'aim'},
+  // PALLA
+  {id:'tennis',cat:'Palla',ico:'🎾',t:'Tennis',d:'Colpisci nella zona',engine:'timing'},
+  {id:'tabletennis',cat:'Palla',ico:'🏓',t:'Ping Pong',d:'Scambio veloce',engine:'rhythm'},
+  {id:'basket',cat:'Palla',ico:'🏀',t:'Basket 3x3',d:'Tiro da 3 punti',engine:'aim'},
+  {id:'football',cat:'Palla',ico:'⚽',t:'Calcio · Rigori',d:'Mira l\'angolo',engine:'aim'},
+  {id:'volley',cat:'Palla',ico:'🏐',t:'Beach Volley',d:'Schiacciata a tempo',engine:'timing'},
+  {id:'badminton',cat:'Palla',ico:'🏸',t:'Badminton',d:'Volano a ritmo',engine:'rhythm'},
+  // COMBATTIMENTO
+  {id:'boxing',cat:'Combattimento',ico:'🥊',t:'Boxe',d:'Colpisci al lampo rosso',engine:'timing'},
+  {id:'fencing',cat:'Combattimento',ico:'🤺',t:'Scherma',d:'Affondo al momento',engine:'timing'},
+  {id:'judo',cat:'Combattimento',ico:'🥋',t:'Judo',d:'Proiezione a tempo',engine:'mash'},
+  {id:'taekwondo',cat:'Combattimento',ico:'🦵',t:'Taekwondo',d:'Calci in combo',engine:'rhythm'},
+  // PRECISIONE
+  {id:'archery',cat:'Precisione',ico:'🏹',t:'Tiro con l\'arco',d:'Centra il bersaglio',engine:'aim'},
+  {id:'shooting',cat:'Precisione',ico:'🔫',t:'Tiro a segno',d:'Mira e spara',engine:'aim'},
+  {id:'golf',cat:'Precisione',ico:'⛳',t:'Golf',d:'Potenza giusta',engine:'aim'},
+  // GINNASTICA
+  {id:'gym',cat:'Ginnastica',ico:'🤸',t:'Corpo libero',d:'Sequenza ritmica',engine:'rhythm'},
+  {id:'trampoline',cat:'Ginnastica',ico:'🔄',t:'Trampolino',d:'Rotazioni a tempo',engine:'timing'},
+  {id:'beam',cat:'Ginnastica',ico:'🧘',t:'Trave',d:'Tieni l\'equilibrio',engine:'balance'},
+  // CICLISMO / FORZA
+  {id:'cycling',cat:'Forza & Ruote',ico:'🚴',t:'Ciclismo',d:'Pedala a ritmo',engine:'mash'},
+  {id:'weight',cat:'Forza & Ruote',ico:'🏋️',t:'Sollevamento',d:'Carica e solleva',engine:'mash'},
+  {id:'rowing',cat:'Forza & Ruote',ico:'🚣',t:'Canottaggio',d:'Vogata a tempo',engine:'rhythm'},
+  {id:'skate',cat:'Forza & Ruote',ico:'🛹',t:'Skateboard',d:'Trick a tempo',engine:'timing'},
+  // INVERNALI (collab speciale)
+  {id:'ski',cat:'Invernali',ico:'⛷️',t:'Sci',d:'Slalom tra le porte',engine:'timing'},
+  {id:'skating',cat:'Invernali',ico:'⛸️',t:'Pattinaggio',d:'Salto artistico',engine:'rhythm'},
+  {id:'curling',cat:'Invernali',ico:'🥌',t:'Curling',d:'Forza precisa',engine:'aim'},
+];
+const CATS=['Tutti','Atletica','Acquatici','Palla','Combattimento','Precisione','Ginnastica','Forza & Ruote','Invernali'];
+let activeCat='Tutti';
+const best={};
+
+function renderCats(){
+  const tabs=document.getElementById('catTabs');tabs.innerHTML='';
+  CATS.forEach(c=>{const el=document.createElement('div');el.className='cat-tab'+(c===activeCat?' on':'');
+    el.textContent=c;el.onclick=()=>{activeCat=c;renderCats();renderSports();};tabs.appendChild(el);});
+}
+const CAT_COLOR={
+  'Atletica':'#e60012','Acquatici':'#0085c7','Palla':'#009f3d','Combattimento':'#b4000f',
+  'Precisione':'#f4c300','Ginnastica':'#9b30e0','Forza & Ruote':'#ff7a00','Invernali':'#00c2d6'
+};
+const ENGINE_LABEL={timing:'Tempismo',aim:'Mira',rhythm:'Ritmo',mash:'Velocità',balance:'Equilibrio'};
+function renderSports(){
+  const grid=document.getElementById('sportGrid');grid.innerHTML='';
+  SPORTS.filter(s=>activeCat==='Tutti'||s.cat===activeCat).forEach(s=>{
+    const col=CAT_COLOR[s.cat]||'#0085c7';
+    const el=document.createElement('div');el.className='sport-card';
+    el.style.setProperty('--accent',col);
+    el.innerHTML=`<span class="ico">${s.ico}</span><div class="st">${s.t}</div><div class="sd">${s.d}</div>
+      <span class="badge">${ENGINE_LABEL[s.engine]}</span>
+      ${best[s.id]?`<div class="rec">★ ${best[s.id]}</div>`:''}
+      <button class="play-cta">▶ GIOCA</button>`;
+    el.onclick=()=>startGame(s);grid.appendChild(el);
+  });
+  grid.scrollLeft=0;
+}
+function showGames(){document.getElementById('games-face').classList.add('on');renderCats();renderSports();}
+function hideGames(){document.getElementById('games-face').classList.remove('on');}
+function scrollGames(dir){const g=document.getElementById('sportGrid');if(g)g.scrollBy({left:dir*g.clientWidth*0.82,behavior:'smooth'});}
+
+/* ============================================================
+   MINI-GAME ENGINES — modernized, Nintendo×Olympics arcade look
+   Shared scene: stadium bg, rings banner, animated athlete avatar,
+   impact particles, star ratings, screen shake, juicy feedback.
+   5 mechanics: timing | rhythm | aim | mash | balance
+   ============================================================ */
+let game={};
+const FX={parts:[],pops:[],shake:0,bg:0};
+
+function startGame(s){
+  document.getElementById('games-face').classList.remove('on');
+  document.getElementById('play').classList.add('on');
+  document.getElementById('pName').textContent=s.t;
+  document.getElementById('pScore').textContent='0';
+  const cv=document.getElementById('gameCanvas'),ctx=cv.getContext('2d');
+  const DPR=Math.min(2,window.devicePixelRatio||1);
+  const fit=()=>{const rc=cv.getBoundingClientRect();const sx=cv.clientWidth?rc.width/cv.clientWidth:1;
+    cv.width=Math.round(cv.clientWidth*DPR*sx);cv.height=Math.round(cv.clientHeight*DPR*sx);
+    ctx.setTransform(DPR*sx,0,0,DPR*sx,0,0);};fit();
+  game={s,cv,ctx,DPR,score:0,combo:0,maxCombo:0,time:30,running:true,engine:s.engine,
+        state:{},avatar:{y:0,vy:0,react:0,lean:0},hits:0,total:0};
+  FX.parts=[];FX.pops=[];FX.shake=0;
+  const ctr=document.getElementById('playControls');ctr.innerHTML='';
+  const hint=document.getElementById('pHint');
+  if(s.engine==='mash'){
+    hint.textContent='Martella alternando SX e DX per accelerare!';
+    addBtn(ctr,'a','◀ SX',()=>mash('L'));addBtn(ctr,'b','DX ▶',()=>mash('R'));
+    game.state={left:true,prog:0,speed:0,heat:0};
+  }else if(s.engine==='rhythm'){
+    hint.textContent='Premi A quando la nota tocca il cerchio dorato.';
+    addBtn(ctr,'a','● TAP',()=>rhythmHit());
+    game.state={notes:[],spawn:0,beat:0};
+  }else if(s.engine==='aim'){
+    hint.textContent='Il mirino oscilla: lancia quando è sul giallo.';
+    addBtn(ctr,'a','◎ LANCIA',()=>aimShoot());
+    game.state={pos:0,dir:1,speed:.014,wind:0};
+  }else if(s.engine==='balance'){
+    hint.textContent='Tieni l\'equilibrio correggendo SX / DX.';
+    addBtn(ctr,'a','◀',()=>balance(-1));addBtn(ctr,'b','▶',()=>balance(1));
+    game.state={tilt:0,vel:0,wind:0};
+  }else{
+    hint.textContent='Premi SWING quando il marcatore entra nella zona.';
+    addBtn(ctr,'a','▶ SWING',()=>timingHit());
+    game.state={pos:0,dir:1,speed:.012};
+  }
+  let t=30;document.getElementById('pTimer').textContent=t;
+  game.iv=setInterval(()=>{t--;document.getElementById('pTimer').textContent=t;
+    if(t<=5)document.getElementById('pTimer').style.color='#e60012';
+    else document.getElementById('pTimer').style.color='';
+    if(t<=0)endGame();},1000);
+  requestAnimationFrame(loop);
+}
+function addBtn(c,cls,label,fn){const b=document.createElement('button');b.className='act-btn '+cls;b.textContent=label;b.onclick=fn;c.appendChild(b);}
+
+/* ---- juicy feedback ---- */
+function spawnParticles(x,y,color,n){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*4;
+    FX.parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:1,color,size:2+Math.random()*4});}
+}
+function popText(x,y,txt,color){FX.pops.push({x,y,txt,color,life:1});}
+function comboFx(txt){const f=document.getElementById('comboFlash');f.textContent=txt;
+  f.classList.remove('show');void f.offsetWidth;f.classList.add('show');}
+function award(base,quality){
+  game.combo++;game.maxCombo=Math.max(game.maxCombo,game.combo);game.hits++;game.total++;
+  const mult=1+Math.floor(game.combo/5)*0.5;
+  const g=Math.round((base+game.combo*2)*mult);game.score+=g;
+  document.getElementById('pScore').textContent=game.score;
+  const cv=game.cv,W=cv.clientWidth;
+  const col=quality==='perfect'?'#f4c300':'#009f3d';
+  spawnParticles(W/2,cv.clientHeight*0.55,col,quality==='perfect'?22:12);
+  popText(W/2,cv.clientHeight*0.4,(quality==='perfect'?'PERFECT ':'+')+g,col);
+  FX.shake=quality==='perfect'?9:5;
+  game.avatar.react=1;game.avatar.vy=-6;
+  if(game.combo>=3 && game.combo%3===0)comboFx('COMBO ×'+game.combo+(mult>1?'  ('+mult+'×)':''));
+}
+function miss(){game.combo=0;game.total++;FX.shake=4;game.avatar.lean=(Math.random()-.5)*0.6;
+  const cv=game.cv;spawnParticles(cv.clientWidth/2,cv.clientHeight*0.55,'#e60012',6);
+  popText(cv.clientWidth/2,cv.clientHeight*0.42,'MISS','#e60012');}
+
+/* ---- actions ---- */
+function timingHit(){const st=game.state;const d=Math.abs(st.pos-0.5);
+  if(d<0.05){award(14,'perfect');st.speed=Math.min(.034,st.speed+.0014);}
+  else if(d<0.1){award(8);st.speed=Math.min(.034,st.speed+.001);}else miss();}
+function aimShoot(){const st=game.state;const d=Math.abs(st.pos-0.5);
+  if(d<0.05){award(22,'perfect');}else if(d<0.13){award(9);}else miss();
+  st.speed=Math.min(.03,st.speed+.001);}
+function rhythmHit(){const st=game.state;const hit=st.notes.find(n=>Math.abs(n.y-0.8)<0.06&&!n.done);
+  if(hit){hit.done=true;const d=Math.abs(hit.y-0.8);award(d<0.025?12:9,d<0.025?'perfect':'ok');}else miss();}
+function mash(side){const st=game.state;const want=st.left?'L':'R';
+  if(side===want){st.left=!st.left;st.prog+=1;st.speed=Math.min(1,st.speed+0.06);st.heat=1;
+    game.score+=3;document.getElementById('pScore').textContent=game.score;game.avatar.y=-4;
+    if(st.prog%12===0){comboFx('SPRINT! +18');game.score+=18;
+      spawnParticles(game.cv.clientWidth/2,game.cv.clientHeight*0.6,'#f4c300',16);}}
+  else{miss();st.speed*=0.6;}}
+function balance(dir){game.state.vel+=dir*0.55;game.avatar.lean=dir*0.3;}
+
+/* ============================================================
+   RENDER LOOP — shared scene + per-engine playfield
+   ============================================================ */
+const RINGCOLS=['#0085c7','#000','#e60012','#f4c300','#009f3d'];
+function loop(){
+  if(!game.running)return;
+  const {ctx,cv,engine,state:st}=game;
+  const W=cv.clientWidth,H=cv.clientHeight;
+  FX.bg+=0.004;
+  // screen shake
+  let sx=0,sy=0;
+  if(FX.shake>0){sx=(Math.random()-.5)*FX.shake;sy=(Math.random()-.5)*FX.shake;FX.shake*=0.85;if(FX.shake<0.3)FX.shake=0;}
+  ctx.save();ctx.translate(sx,sy);
+  drawStadium(ctx,W,H);
+
+  // avatar physics
+  const av=game.avatar;
+  av.vy+=0.6;av.y+=av.vy;if(av.y>0){av.y=0;av.vy=0;}
+  av.react*=0.9;av.lean*=0.92;
+
+  if(engine==='timing')drawTiming(ctx,W,H,st);
+  else if(engine==='aim')drawAim(ctx,W,H,st);
+  else if(engine==='rhythm')drawRhythm(ctx,W,H,st);
+  else if(engine==='mash')drawMash(ctx,W,H,st);
+  else if(engine==='balance')drawBalance(ctx,W,H,st);
+
+  drawAthlete(ctx,W,H,av);
+  drawParticles(ctx);
+  drawPops(ctx);
+  drawComboMeter(ctx,W,H);
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+function drawStadium(ctx,W,H){
+  // sky gradient
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#a9def8');g.addColorStop(0.55,'#cdebfb');g.addColorStop(1,'#e9f6ff');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // animated crowd dots
+  ctx.save();
+  for(let i=0;i<40;i++){const x=(i*53+Math.sin(FX.bg+i)*4)%W;const y=18+(i%3)*10;
+    ctx.fillStyle=RINGCOLS[i%5]+'88';ctx.beginPath();ctx.arc(x,y,2.4,0,7);ctx.fill();}
+  ctx.restore();
+  // olympic rings banner (top, subtle)
+  ctx.save();ctx.globalAlpha=0.5;
+  const rr=7,gap=15,bx=W/2-gap*2,by=44;
+  for(let i=0;i<5;i++){ctx.strokeStyle=RINGCOLS[i]==='#000'?'#cfd8e3':RINGCOLS[i];
+    ctx.lineWidth=2.4;ctx.beginPath();
+    ctx.arc(bx+i*gap+(i%2?0:0),by+(i%2? rr*0.6:0),rr,0,7);ctx.stroke();}
+  ctx.restore();
+  // field
+  const fy=H*0.7;
+  const fg=ctx.createLinearGradient(0,fy,0,H);
+  fg.addColorStop(0,'#5fc24a');fg.addColorStop(1,'#3a9b30');
+  ctx.fillStyle=fg;ctx.fillRect(0,fy,W,H-fy);
+  // lane lines
+  ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=2;
+  for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,fy+i*(H-fy)/5);ctx.lineTo(W,fy+i*(H-fy)/5);ctx.stroke();}
+}
+
+function drawAthlete(ctx,W,H,av){
+  const x=W/2, base=H*0.7+av.y;
+  ctx.save();ctx.translate(x,base);ctx.rotate(av.lean);
+  const bob=Math.sin(FX.bg*6)*2;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,4,22,6,0,0,7);ctx.fill();
+  // body (Nike-ish kit, bright)
+  ctx.fillStyle='#e60012';ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  // legs
+  ctx.strokeStyle='#1b2b4a';ctx.lineWidth=6;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-6,-22);ctx.lineTo(-9,0);ctx.moveTo(6,-22);ctx.lineTo(9,0);ctx.stroke();
+  // torso
+  ctx.fillStyle='#e60012';ctx.beginPath();
+  ctx.roundRect(-12,-46-bob,24,28,8);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  // swoosh hint
+  ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();
+  ctx.moveTo(-6,-32-bob);ctx.quadraticCurveTo(2,-30-bob,8,-36-bob);ctx.stroke();
+  // arms (react = raise)
+  ctx.strokeStyle='#f0c9a0';ctx.lineWidth=5;
+  const armUp=av.react*0.8;
+  ctx.beginPath();ctx.moveTo(-10,-40-bob);ctx.lineTo(-18,-40-bob-armUp*14);
+  ctx.moveTo(10,-40-bob);ctx.lineTo(18,-40-bob-armUp*14);ctx.stroke();
+  // head
+  ctx.fillStyle='#f0c9a0';ctx.beginPath();ctx.arc(0,-56-bob,9,0,7);ctx.fill();
+  // headband
+  ctx.strokeStyle='#f4c300';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,-58-bob,9,Math.PI*1.1,Math.PI*1.9);ctx.stroke();
+  ctx.restore();
+}
+
+function drawParticles(ctx){
+  FX.parts=FX.parts.filter(p=>p.life>0);
+  for(const p of FX.parts){p.x+=p.vx;p.y+=p.vy;p.vy+=0.25;p.life-=0.03;
+    ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+}
+function drawPops(ctx){
+  FX.pops=FX.pops.filter(p=>p.life>0);
+  for(const p of FX.pops){p.y-=1.2;p.life-=0.02;
+    ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;
+    ctx.font='900 22px Inter,sans-serif';ctx.textAlign='center';
+    ctx.fillText(p.txt,p.x,p.y);}
+  ctx.globalAlpha=1;
+}
+function drawComboMeter(ctx,W,H){
+  if(game.combo<1)return;
+  const w=Math.min(W*0.6,game.combo*14);
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(W/2-W*0.3,H-14,W*0.6,6);
+  const g=ctx.createLinearGradient(W/2-w/2,0,W/2+w/2,0);
+  g.addColorStop(0,'#0085c7');g.addColorStop(0.5,'#f4c300');g.addColorStop(1,'#e60012');
+  ctx.fillStyle=g;ctx.fillRect(W/2-w/2,H-14,w,6);
+}
+
+/* ---- per-engine playfields ---- */
+function drawTiming(ctx,W,H,st){
+  st.pos+=st.speed*(st.dir||1);
+  if(st.pos>1){st.pos=1;st.dir=-1;}if(st.pos<0){st.pos=0;st.dir=1;}
+  const trackY=H*0.32,tw=W*0.84,tx=(W-tw)/2;
+  // track bar
+  ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.roundRect(tx,trackY-12,tw,24,12);ctx.fill();
+  // perfect zone
+  const z1=tx+tw*0.45,zw=tw*0.1;
+  const grd=ctx.createLinearGradient(z1,0,z1+zw,0);
+  grd.addColorStop(0,'#f4c30000');grd.addColorStop(0.5,'#f4c300cc');grd.addColorStop(1,'#f4c30000');
+  ctx.fillStyle=grd;ctx.fillRect(z1,trackY-12,zw,24);
+  ctx.strokeStyle='#f4c300';ctx.lineWidth=2;ctx.strokeRect(tx+tw*0.4,trackY-12,tw*0.2,24);
+  // marker
+  const mx=tx+tw*st.pos;
+  ctx.fillStyle='#fff';ctx.shadowColor='#7fdfff';ctx.shadowBlur=12;
+  ctx.beginPath();ctx.moveTo(mx,trackY-18);ctx.lineTo(mx-7,trackY-30);ctx.lineTo(mx+7,trackY-30);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.font='30px sans-serif';ctx.textAlign='center';ctx.fillText(game.s.ico,mx,trackY+2);
+}
+function drawAim(ctx,W,H,st){
+  st.pos+=st.speed*(st.dir||1);
+  if(st.pos>1){st.pos=1;st.dir=-1;}if(st.pos<0){st.pos=0;st.dir=1;}
+  const cx=W/2,cy=H*0.32,rad=Math.min(W,H)*0.13;
+  for(let i=5;i>0;i--){ctx.beginPath();ctx.arc(cx,cy,rad*i/5,0,7);
+    ctx.fillStyle=i%2?'#f5f5f5':'#e60012';ctx.fill();}
+  ctx.fillStyle='#f4c300';ctx.beginPath();ctx.arc(cx,cy,rad*0.2,0,7);ctx.fill();
+  // crosshair
+  const x=W*0.08+st.pos*W*0.84;
+  ctx.strokeStyle='#0085c7';ctx.lineWidth=3;ctx.shadowColor='#0085c7';ctx.shadowBlur=8;
+  ctx.beginPath();ctx.moveTo(x,cy-rad-8);ctx.lineTo(x,cy+rad+8);
+  ctx.moveTo(x-rad-8,cy);ctx.lineTo(x+rad+8,cy);ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#0085c7';ctx.beginPath();ctx.arc(x,cy,4,0,7);ctx.fill();
+}
+function drawRhythm(ctx,W,H,st){
+  st.spawn--;st.beat+=0.05;
+  if(st.spawn<=0){st.notes.push({y:0.05,done:false});st.spawn=36+Math.random()*22;}
+  const tx=W/2,zoneY=H*0.8;
+  // lane
+  ctx.strokeStyle='rgba(127,223,255,.15)';ctx.lineWidth=W*0.16;ctx.beginPath();
+  ctx.moveTo(tx,0);ctx.lineTo(tx,H);ctx.stroke();
+  // target ring (pulses with beat)
+  const pr=30+Math.sin(st.beat)*3;
+  ctx.strokeStyle='#f4c300';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tx,zoneY,pr,0,7);ctx.stroke();
+  ctx.fillStyle='rgba(244,195,0,.12)';ctx.beginPath();ctx.arc(tx,zoneY,pr,0,7);ctx.fill();
+  st.notes.forEach(n=>{n.y+=0.0075;
+    if(!n.done){const near=Math.abs(n.y-0.8)<0.06;
+      ctx.fillStyle=near?'#d4ff37':'#7fdfff';ctx.shadowColor=near?'#d4ff37':'#7fdfff';ctx.shadowBlur=near?14:6;
+      ctx.beginPath();ctx.arc(tx,n.y*H,15,0,7);ctx.fill();ctx.shadowBlur=0;}});
+  st.notes=st.notes.filter(n=>{if(n.y>0.92&&!n.done){miss();return false;}return n.y<1.05;});
+}
+function drawMash(ctx,W,H,st){
+  st.speed*=0.97;st.heat*=0.9;
+  const p=Math.min(1,st.prog/110);
+  const trackY=H*0.32,tw=W*0.84,tx=(W-tw)/2;
+  ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.roundRect(tx,trackY-6,tw,12,6);ctx.fill();
+  const g=ctx.createLinearGradient(tx,0,tx+tw,0);
+  g.addColorStop(0,'#0085c7');g.addColorStop(0.5,'#f4c300');g.addColorStop(1,'#e60012');
+  ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(tx,trackY-6,tw*p,12,6);ctx.fill();
+  // finish flag
+  ctx.fillStyle='#fff';ctx.font='20px sans-serif';ctx.fillText('🏁',tx+tw+2,trackY+6);
+  // runner icon on track
+  const rx=tx+tw*p;
+  ctx.font='30px sans-serif';ctx.textAlign='center';ctx.fillText(game.s.ico,rx,trackY-12);
+  // speed gauge
+  ctx.fillStyle='#cdd6e0';ctx.font='12px sans-serif';
+  ctx.fillText('VELOCITÀ '+Math.round(st.speed*100)+'%',W/2,H*0.46);
+  // next key prompt big
+  ctx.fillStyle=st.left?'#0085c7':'#e60012';ctx.font='900 26px Inter,sans-serif';
+  ctx.fillText(st.left?'◀ SINISTRA':'DESTRA ▶',W/2,H*0.55);
+  if(p>=1&&!st._fin){st._fin=true;game.score+=80;comboFx('TRAGUARDO! +80');
+    spawnParticles(W/2,H*0.5,'#f4c300',30);FX.shake=10;}
+}
+function drawBalance(ctx,W,H,st){
+  st.wind+=(Math.random()-0.5)*0.07;st.wind=Math.max(-0.5,Math.min(0.5,st.wind));
+  st.vel+=st.tilt*0.018+st.wind*0.02;st.vel*=0.95;st.tilt+=st.vel;
+  st.tilt=Math.max(-3,Math.min(3,st.tilt));
+  if(Math.abs(st.tilt)>2.6){miss();st.tilt*=0.5;st.vel=0;}
+  else{game.score+=1;document.getElementById('pScore').textContent=game.score;
+    if(game.score%30===0)spawnParticles(W/2,H*0.45,'#009f3d',6);}
+  // beam
+  const cx=W/2,cy=H*0.5;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(st.tilt*0.16);
+  ctx.fillStyle='#c98a3a';ctx.fillRect(-W*0.32,-6,W*0.64,12);
+  ctx.font='34px sans-serif';ctx.textAlign='center';ctx.fillText(game.s.ico,0,-14);ctx.restore();
+  // balance gauge
+  ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(W/2-60,H*0.7,120,8);
+  const off=st.tilt/3*60;
+  ctx.fillStyle=Math.abs(st.tilt)>2?'#e60012':'#009f3d';
+  ctx.beginPath();ctx.arc(W/2+off,H*0.7+4,7,0,7);ctx.fill();
+}
+
+function endGame(){
+  clearInterval(game.iv);game.running=false;
+  best[game.s.id]=Math.max(best[game.s.id]||0,game.score);
+  S.totalPoints+=game.score;
+  // brief result overlay via combo flash
+  const acc=game.total?Math.round(game.hits/game.total*100):0;
+  comboFx('FINE · '+game.score+' pt');
+  document.getElementById('play').classList.remove('on');
+  openBoard(game.score);
+}
+
+/* ============================================================
+   LEADERBOARD + POINTS→DISCOUNT
+   Threshold tiers (cumulative across rounds):
+   <120:0% | 120:5% | 200:10% | 300:15% | 450:20% | 650+:25%
+   Top-150 rank => Nintendo capsule (skill, not grind)
+   ============================================================ */
+function tierFor(p){if(p>=650)return 25;if(p>=450)return 20;if(p>=300)return 15;if(p>=200)return 10;if(p>=120)return 5;return 0;}
+const NAMES=['LUNA','REX','MIA','KAI','ZED','NOVA','BO','ARI','JUN','SKY','ELI','TARO','VIV','NEO','IKA'];
+function genBoard(){
+  const field=[];
+  for(let i=0;i<180;i++)field.push({nm:NAMES[i%NAMES.length]+(10+i%89),sc:Math.floor(180+Math.random()*620),me:false});
+  field.push({nm:'TU',sc:S.totalPoints,me:true});
+  field.sort((a,b)=>b.sc-a.sc);
+  const rank=field.findIndex(f=>f.me)+1;S.bestRank=Math.min(S.bestRank,rank);
+  return {field,rank};
+}
+function openBoard(){
+  document.getElementById('games-face').classList.remove('on');
+  document.getElementById('board').classList.add('on');
+  const {field,rank}=genBoard();
+  const pct=tierFor(S.totalPoints);S.discount=pct;S.special=rank<=150;
+  if(pct>0&&!S.discountCode)S.discountCode='WII'+Math.floor(1000+Math.random()*8999);
+  const nextTier=[120,200,300,450,650].find(x=>x>S.totalPoints);
+  const toNext=nextTier?nextTier-S.totalPoints:0;
+  const slot=document.getElementById('rewardSlot');
+  if(pct===0){
+    slot.innerHTML=`<div class="reward"><div class="lbl">Punti totali · ${S.totalPoints}</div>
+      <div class="disc">${toNext}</div><div class="meta">punti al primo sconto (5%). Gioca ancora!</div></div>`;
+  }else{
+    slot.innerHTML=`<div class="reward ${S.special?'special':''}">
+      <div class="lbl">${S.special?'★ TOP 150 · CAPSULE SBLOCCATA':'Sconto sbloccato'}</div>
+      <div class="disc">${pct}%</div><div class="code">${S.discountCode}</div>
+      <div class="meta">Punti: <b>${S.totalPoints}</b> · Posizione #${rank}<br>
+      ${toNext?`+${toNext} pt → ${tierFor(nextTier)}%`:'Sconto massimo raggiunto (25%)'}<br>
+      ${S.special?'🎮 Idoneo alle grafiche esclusive Nike × Nintendo':'Entra nei primi 150 per la capsule'}</div></div>`;
+    burstConfetti();
+  }
+  const list=document.getElementById('lbList');list.innerHTML='';
+  const show=[];field.slice(0,5).forEach((f,i)=>show.push([i+1,f]));
+  const meIdx=field.findIndex(f=>f.me);
+  if(meIdx>5){show.push(['…',null]);
+    for(let i=Math.max(0,meIdx-1);i<=Math.min(field.length-1,meIdx+1);i++)show.push([i+1,field[i]]);}
+  show.forEach(([r,f])=>{
+    if(!f){const d=document.createElement('div');d.style.cssText='text-align:center;color:#667;margin:4px';d.textContent='⋯';list.appendChild(d);return;}
+    const el=document.createElement('div');el.className='lb-row'+(f.me?' you':'');
+    el.innerHTML=`<div class="rank">${r<=3?['🥇','🥈','🥉'][r-1]:'#'+r}</div>
+      <div class="nm">${f.nm}${r<=150&&f.me?'<span class="tag">CAPSULE</span>':''}</div>
+      <div class="sc">${f.sc.toLocaleString()}</div>`;list.appendChild(el);
+  });
+}
+function closeBoard(){document.getElementById('board').classList.remove('on');showGames();}
+function useDiscount(){
+  document.getElementById('board').classList.remove('on');
+  document.getElementById('games-face').classList.remove('on');
+  if(S.discount>0){go('s-locate');
+    document.getElementById('locateLead').innerHTML=
+      `Sconto <b>${S.discount}%</b> applicato con <b>${S.discountCode}</b>${S.special?' · 🎮 capsule esclusiva inclusa':''}. Mostra il codice in cassa.`;
+  }else go('s-attract');
+}
+function burstConfetti(){
+  const colors=['#e60012','#0085c7','#f4c300','#009f3d','#fff'];
+  for(let i=0;i<44;i++){const c=document.createElement('div');c.className='confetti';
+    c.style.left=Math.random()*100+'%';c.style.background=colors[i%colors.length];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;document.getElementById('kiosk').appendChild(c);
+    const dur=1.5+Math.random()*1.5;
+    c.animate([{transform:'translateY(0) rotate(0)',opacity:1},
+      {transform:`translateY(${600+Math.random()*200}px) rotate(${720*Math.random()}deg)`,opacity:0}],
+      {duration:dur*1000,easing:'cubic-bezier(.4,0,.6,1)'});
+    setTimeout(()=>c.remove(),dur*1000);}
+}
+
+/* keyboard demo / Wiimote */
+window.addEventListener('keydown',e=>{
+  if(!game.running)return;
+  const eng=game.engine;
+  if(e.code==='Space'){e.preventDefault();
+    if(eng==='timing')timingHit();else if(eng==='aim')aimShoot();
+    else if(eng==='rhythm')rhythmHit();else if(eng==='mash')mash(game.state.left?'L':'R');}
+  if(e.code==='ArrowLeft'){if(eng==='mash')mash('L');if(eng==='balance')balance(-1);}
+  if(e.code==='ArrowRight'){if(eng==='mash')mash('R');if(eng==='balance')balance(1);}
+});
+
+/* ============================================================
+   AI SPHERE — animated particle sphere for attract screen
+   Dots arranged on a 3D sphere, rotating, with breathing,
+   wandering energy pulses, and a connection-web shimmer.
+   ============================================================ */
+(function aiSphereInit(){
+  const cv=document.getElementById('aiSphere');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  let DPR=Math.min(2,window.devicePixelRatio||1);
+  function fit(){const rc=cv.getBoundingClientRect();const sx=cv.clientWidth?rc.width/cv.clientWidth:1;
+    const s=cv.clientWidth;cv.width=Math.round(s*DPR*sx);cv.height=Math.round(s*DPR*sx);}
+  window.__sphereFit=fit;
+  fit();window.addEventListener('resize',fit);
+
+  // generate points on a sphere (fibonacci)
+  const N=420, pts=[];
+  for(let i=0;i<N;i++){
+    const y=1-(i/(N-1))*2;
+    const r=Math.sqrt(1-y*y);
+    const phi=i*Math.PI*(3-Math.sqrt(5));
+    pts.push({x:Math.cos(phi)*r, y:y, z:Math.sin(phi)*r,
+      pulse:Math.random()*Math.PI*2, sp:0.4+Math.random()*0.8});
+  }
+  let t=0;
+  function rot(p,ax,ay){
+    let {x,y,z}=p;
+    let cosY=Math.cos(ay),sinY=Math.sin(ay);
+    let x1=x*cosY - z*sinY, z1=x*sinY + z*cosY;
+    let cosX=Math.cos(ax),sinX=Math.sin(ax);
+    let y1=y*cosX - z1*sinX, z2=y*sinX + z1*cosX;
+    return {x:x1,y:y1,z:z2};
+  }
+  function frame(){
+    if(!document.getElementById('s-attract').classList.contains('active')){
+      requestAnimationFrame(frame);return;
+    }
+    t+=0.006;
+    const W=cv.width,H=cv.height,cx=W/2,cy=H/2;
+    const breathe=1+Math.sin(t*1.6)*0.04;
+    const R=Math.min(W,H)*0.38*breathe;
+    ctx.clearRect(0,0,W,H);
+
+    // soft core glow
+    const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.4);
+    glow.addColorStop(0,'rgba(127,223,255,0.22)');
+    glow.addColorStop(0.5,'rgba(80,140,255,0.08)');
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+
+    const ax=Math.sin(t*0.4)*0.5, ay=t*0.8;
+    const proj=pts.map(p=>{
+      const r=rot(p,ax,ay);
+      const persp=1/(1.8-r.z); // depth scale
+      return {sx:cx+r.x*R*persp, sy:cy+r.y*R*persp, z:r.z, persp, p};
+    });
+    proj.sort((a,b)=>a.z-b.z);
+
+    // connection web (near points)
+    ctx.lineWidth=DPR*0.6;
+    for(let i=0;i<proj.length;i+=3){
+      const a=proj[i];
+      for(let j=i+1;j<Math.min(i+6,proj.length);j++){
+        const b=proj[j];
+        const d=Math.hypot(a.sx-b.sx,a.sy-b.sy);
+        if(d<R*0.32){
+          const alpha=(1-d/(R*0.32))*0.22*((a.z+b.z)/2+1)/2;
+          ctx.strokeStyle='rgba(127,223,255,'+alpha.toFixed(3)+')';
+          ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.stroke();
+        }
+      }
+    }
+    // dots
+    for(const o of proj){
+      const depth=(o.z+1)/2; // 0..1
+      const pulse=0.6+0.4*Math.sin(t*o.p.sp*3+o.p.pulse);
+      const size=DPR*(1.1+depth*2.4)*pulse;
+      const alpha=0.25+depth*0.75;
+      // hot energy dots occasionally tinted volt
+      const hot=Math.sin(t*0.7+o.p.pulse*2)>0.93;
+      ctx.beginPath();ctx.arc(o.sx,o.sy,size,0,7);
+      if(hot){ctx.fillStyle='rgba(212,255,55,'+alpha+')';
+        ctx.shadowColor='rgba(212,255,55,0.8)';ctx.shadowBlur=DPR*8;}
+      else{ctx.fillStyle='rgba(180,235,255,'+alpha+')';
+        ctx.shadowColor='rgba(127,223,255,0.6)';ctx.shadowBlur=DPR*4*depth;}
+      ctx.fill();ctx.shadowBlur=0;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ============================================================
+   FLUID SCALING — fit the fixed 9:16 kiosk to any screen size
+   (keeps phone-perfect proportions, scales up crisply)
+   ============================================================ */
+function fitKiosk(){
+  const BW=430, BH=764.444;
+  const s=Math.min(window.innerWidth/BW, window.innerHeight/BH);
+  const k=document.getElementById('kiosk');
+  if(!k) return;
+  k.style.transform='translate(-50%,-50%) scale('+s+')';
+  if(typeof window.__sphereFit==='function') window.__sphereFit();
+}
+window.addEventListener('resize',fitKiosk);
+window.addEventListener('orientationchange',fitKiosk);
+fitKiosk();
+</script>
+</body>
+</html>
