@@ -34,16 +34,24 @@ const FALLBACK = {
 
 // Carica i dati dal JSON pubblico; in caso di errore usa il fallback.
 export async function loadData() {
-  try {
-    const res = await fetch('./progetti.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (!data || !Array.isArray(data.costellazioni)) throw new Error('formato non valido');
-    return data;
-  } catch (e) {
-    console.warn('[Via Lattea] progetti.json non caricato, uso i dati di esempio:', e.message);
-    return FALLBACK;
+  const candidates = import.meta.env
+    ? ['./progetti.json', './public/progetti.json']
+    : ['./public/progetti.json', './progetti.json'];
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.costellazioni)) throw new Error('formato non valido');
+      return data;
+    } catch (e) {
+      console.warn(`[Via Lattea] ${url} non caricato:`, e.message);
+    }
   }
+
+  console.warn('[Via Lattea] progetti.json non caricato, uso i dati di esempio.');
+  return FALLBACK;
 }
 
 // Calcola posizioni e collegamenti. Restituisce una struttura "universe".
